@@ -1,0 +1,27 @@
+# Render (Blueprint), plan GRATUITO para probar con amigos.
+#
+# Lo que hay que saber del plan gratuito (confírmalo en render.com/free, puede cambiar):
+#  - Se duerme tras 15 min sin tráfico HTTP entrante y tarda entre 15 y 60 s en despertar.
+#  - No admite disco: las mesas y los perfiles se pierden cuando se duerme o se reinicia.
+#  - 512 MB de RAM y 0,1 de CPU: sobra para esta app (80 jugadores usaron ~1,5 % de un núcleo).
+#  - Debe haber UNA sola instancia: las mesas viven en la memoria del servidor.
+#
+# Para uso real, cambia a un plan de pago y descomenta el bloque `disk`.
+services:
+  - type: web
+    name: royale-club
+    runtime: docker
+    plan: free
+    numInstances: 1
+    healthCheckPath: /healthz
+    envVars:
+      - key: TRUST_PROXY
+        value: "1"
+    # plan: starter
+    # envVars:
+    #   - key: DATA_FILE
+    #     value: /data/rooms.json
+    # disk:
+    #   name: royale-data
+    #   mountPath: /data
+    #   sizeGB: 1

@@ -1,0 +1,64 @@
+# Publicar Royale Club
+
+La app necesita **un servidor que se mantenga encendido y acepte WebSockets**. Por eso no sirven el hosting
+compartido de Hostinger (solo admite WebSockets de salida) ni Vercel (las conexiones se cortan con la función y
+las mesas viven en la memoria de un único servidor). Sí sirven Render, Railway, Fly.io o un VPS.
+
+## Reglas que valen para cualquier plataforma
+
+1. **Una sola instancia.** Las mesas están en la memoria del servidor; con dos, cada jugador podría caer en uno distinto.
+2. **`TRUST_PROXY=1`** (ya viene en el `Dockerfile`): sin ella, los límites contra abusos verían a todos con la IP del proxy.
+3. **Disco persistente en `/data`** si quieres que las mesas y los perfiles sobrevivan a reinicios. Sin disco todo funciona,
+   pero al reiniciar se pierden (los jugadores vuelven a crear la mesa).
+4. **Comprobación de salud:** `GET /healthz` devuelve `ok`.
+5. **HTTPS lo pone la plataforma**; el cliente usa `wss://` solo.
+6. **Dominio propio distinto de `lumera-one.com`** y **sin anuncios** en esta app. Los juegos de fiesta (alcohol) y las
+   apuestas simuladas están entre los contenidos restringidos de AdSense: no los mezcles con un dominio o subdominio con
+   AdSense para no poner en riesgo esa cuenta. Revisa la política de Google antes de monetizar nada.
+
+## Render (gratis, para probar)
+
+1. Sube el proyecto a un repositorio de GitHub (no incluyas `node_modules`, `dist` ni `data`: ya están en `.gitignore`).
+2. En Render: **New → Blueprint** y elige el repositorio. Lee `render.yaml` (plan gratuito, una instancia).
+3. Cuando termine, abre la URL `https://royale-club-xxxx.onrender.com`.
+4. Para jugar: abre la URL **un par de minutos antes** para que despierte. Si quieres que no se duerma durante la tarde,
+   un monitor externo que consulte `/healthz` cada 10 minutos lo mantiene despierto (una sola app gasta unas 744 de las
+   750 horas gratuitas del mes).
+5. Límites: se pierden mesas y perfiles al dormirse o reiniciarse. Para uso continuo: plan de pago + disco (bloque
+   comentado en `render.yaml`).
+
+## Railway
+
+1. Nuevo proyecto → **Deploy from GitHub** (detecta el `Dockerfile`).
+2. Variables: `TRUST_PROXY=1`, `DATA_FILE=/data/rooms.json`.
+3. Añade un **Volume** montado en `/data`.
+4. En *Settings → Networking* genera un dominio o conecta el tuyo. Comprobación de salud: `/healthz`.
+
+## Fly.io
+
+```bash
+fly launch --copy-config --no-deploy      # elige un nombre de app único (edita fly.toml)
+fly volumes create royale_data --size 1 --region mad
+fly deploy
+fly scale count 1
+```
+
+`fly.toml` ya deja una máquina siempre encendida y el volumen en `/data`.
+
+## VPS (Hostinger u otro)
+
+```bash
+docker build -t royale-club .
+docker run -d --name royale --restart unless-stopped -p 3001:3001 -v royale-data:/data royale-club
+```
+
+Pon delante Caddy o Nginx con HTTPS y reenvío de WebSockets a `localhost:3001`.
+
+## Después de publicar: lista de comprobación
+
+- [ ] Dos móviles entran a la misma mesa con el código y con el QR.
+- [ ] Jugar una ronda de cada juego, y que el anfitrión cambie de juego.
+- [ ] Abrir `/?tv=CODIGO` en un portátil o una tele.
+- [ ] Apagar la pantalla de un móvil 10 segundos y comprobar que vuelve a la mesa.
+- [ ] Compartir la imagen del resumen de la noche desde un móvil.
+- [ ] Instalar la app desde el navegador (icono de instalar / "Añadir a pantalla de inicio").

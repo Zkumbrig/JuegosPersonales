@@ -1,0 +1,246 @@
+/* ---------- Temas ----------
+   "gold" es el color de acento de cada tema (en Neón es cian, en Zafiro es plata). */
+:root,
+[data-theme='esmeralda'] {
+  --bg: #0a0807;
+  --bg-glow: #2a1d0c;
+  --panel: #1a1510;
+  --line: #3a2f1c;
+  --felt-hi: #14664d;
+  --felt: #0d4030;
+  --felt-dark: #072a1f;
+  --gold: #d9b45a;
+  --gold-hi: #f6e3a1;
+  --gold-lo: #8a6a22;
+  --accent-rgb: 217 180 90;
+  --on-accent: #2a1c05;
+  --foil: linear-gradient(115deg, #fff0b8 0%, #e6bc5a 26%, #f2b49a 50%, #c9a2e6 66%, #e8c76d 82%, #a67c1f 100%);
+  --back-1: #7b1a2b;
+  --back-2: #4a0d19;
+  --machine-1: #3a0f19;
+  --machine-2: #1e0710;
+  --text: #efe6d2;
+  --muted: #a89c82;
+  --theme-color: #0a0807;
+}
+[data-theme='neon'] {
+  --bg: #07040f;
+  --bg-glow: #2a0f55;
+  --panel: #130b25;
+  --line: #2f2057;
+  --felt-hi: #3a1a7a;
+  --felt: #20104f;
+  --felt-dark: #0e0630;
+  --gold: #4cc9f0;
+  --gold-hi: #b8f4ff;
+  --gold-lo: #7b2ff7;
+  --accent-rgb: 76 201 240;
+  --on-accent: #06101c;
+  --foil: linear-gradient(115deg, #c9fbff 0%, #4cc9f0 28%, #8a7bff 52%, #ff7ad9 68%, #4cc9f0 84%, #7b2ff7 100%);
+  --back-1: #4a1d96;
+  --back-2: #1a0b4a;
+  --machine-1: #2a0b5e;
+  --machine-2: #12052e;
+  --text: #eaf4ff;
+  --muted: #9aa6c9;
+  --theme-color: #07040f;
+}
+[data-theme='rubi'] {
+  --bg: #0b0506;
+  --bg-glow: #3a0a12;
+  --panel: #1c1012;
+  --line: #43232a;
+  --felt-hi: #a01b30;
+  --felt: #6b0f1f;
+  --felt-dark: #3d0812;
+  --gold: #d9b45a;
+  --gold-hi: #f6e3a1;
+  --gold-lo: #8a6a22;
+  --accent-rgb: 217 180 90;
+  --on-accent: #2a1c05;
+  --foil: linear-gradient(115deg, #fff0b8 0%, #e6bc5a 28%, #ff9d8a 52%, #e6bc5a 76%, #a67c1f 100%);
+  --back-1: #0f3d2c;
+  --back-2: #082a1e;
+  --machine-1: #123524;
+  --machine-2: #08190f;
+  --text: #f3e6e0;
+  --muted: #b39c97;
+  --theme-color: #0b0506;
+}
+[data-theme='zafiro'] {
+  --bg: #05080f;
+  --bg-glow: #0c2250;
+  --panel: #0e1523;
+  --line: #243350;
+  --felt-hi: #1c4f9c;
+  --felt: #0e2f6b;
+  --felt-dark: #071a40;
+  --gold: #c4d3ea;
+  --gold-hi: #f4f8ff;
+  --gold-lo: #6f84a8;
+  --accent-rgb: 196 211 234;
+  --on-accent: #0b1426;
+  --foil: linear-gradient(115deg, #ffffff 0%, #c4d3ea 24%, #93b7ff 48%, #e8f0ff 66%, #8fa6c9 84%, #5a7099 100%);
+  --back-1: #1a3a7a;
+  --back-2: #0a1c44;
+  --machine-1: #0c2250;
+  --machine-2: #060f2a;
+  --text: #e8eefa;
+  --muted: #94a3bf;
+  --theme-color: #05080f;
+}
+
+:root {
+  color-scheme: dark; /* controles nativos (casillas, deslizadores) en oscuro */
+  --burgundy: #6b1423;
+  --ivory: #f5efe0;
+  --danger: #e0564b;
+  --ok: #5fd08a;
+  --gold-grad: var(--foil);
+  --font-display: 'Unbounded', 'Arial Black', system-ui, sans-serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  /* Grano de fieltro: un SVG diminuto que se pinta una sola vez (sin filtros en tiempo real). */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='96' height='96' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+}
+
+*, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+body {
+  /* Rayos art déco estáticos en la cabecera (una sola capa de gradiente, sin imágenes). */
+  background:
+    radial-gradient(120% 60% at 50% -10%, var(--bg-glow) 0%, transparent 60%),
+    linear-gradient(to bottom, transparent 0%, var(--bg) 88%) top / 100% 521px no-repeat,
+    repeating-conic-gradient(from -90deg at 50% -6%, rgb(var(--accent-rgb) / 0.1) 0 4deg, transparent 4deg 9deg) top / 100% 520px no-repeat,
+    var(--bg);
+  min-height: 100dvh;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; touch-action: manipulation; }
+button:disabled { cursor: not-allowed; }
+input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 2px; }
+
+.display { font-family: var(--font-display); letter-spacing: -0.01em; }
+.gold-text,
+.foil-text {
+  background: var(--gold-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  padding-bottom: 0.08em; /* evita recortar descendentes (y, g) */
+}
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Botones */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  transition: transform 0.12s ease, opacity 0.15s;
+}
+.btn:active:not(:disabled) { transform: scale(0.96); }
+.btn:disabled { opacity: 0.4; }
+.btn-gold {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--gold-grad);
+  color: var(--on-accent);
+  box-shadow: 0 6px 20px rgb(var(--accent-rgb) / 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+/* Destello de foil: solo transform, así corre en la GPU. */
+.btn-gold:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.7) 50%, transparent 62%);
+  transform: translateX(-130%);
+  animation: sheen 6s ease-in-out 1.5s infinite;
+  pointer-events: none;
+}
+@keyframes sheen { 0%, 55% { transform: translateX(-130%); } 100% { transform: translateX(130%); } }
+.btn-ghost {
+  border: 1px solid var(--gold-lo);
+  color: var(--gold-hi);
+  background: rgb(var(--accent-rgb) / 0.06);
+}
+.btn-danger { background: linear-gradient(135deg, #ff8a7d, #c0392b); color: #fff; }
+
+/* Boleto: dos muescas laterales (máscara estática). Para tarjetas de juego y de pregunta. */
+.ticket {
+  --n: 9px;
+  -webkit-mask: radial-gradient(circle var(--n) at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--n) at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+  mask: radial-gradient(circle var(--n) at 0 50%, #0000 97%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--n) at 100% 50%, #0000 97%, #000) right / 51% 100% no-repeat;
+}
+
+/* Paneles */
+.panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01)), var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+/* Fieltro de mesa: degradado + grano + filete interior. Todo estático = coste de pintado casi nulo. */
+.felt {
+  position: relative;
+  background:
+    var(--grain),
+    radial-gradient(90% 70% at 50% 25%, var(--felt-hi) 0%, var(--felt) 55%, var(--felt-dark) 100%);
+  background-blend-mode: soft-light, normal;
+  border: 2px solid var(--gold-lo);
+  border-radius: 24px;
+  box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55), 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.felt::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 18px;
+  border: 1px solid rgb(var(--accent-rgb) / 0.28);
+  pointer-events: none;
+}
+
+/* Anillo pulsante: solo anima opacidad (compositor), no box-shadow (repintado). */
+.pulse { position: relative; }
+.pulse::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px var(--gold-hi), 0 0 14px 2px rgb(var(--accent-rgb) / 0.6);
+  opacity: 0;
+  pointer-events: none;
+  animation: ring 1.3s ease-in-out var(--ring-count, infinite);
+}
+
+@keyframes ring { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
