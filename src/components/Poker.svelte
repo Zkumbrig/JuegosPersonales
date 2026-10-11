@@ -78,7 +78,7 @@
   const status = $derived.by(() => {
     if (pk.phase === 'waiting') {
       if (pk.seats.length < 2) return 'Se necesitan al menos 2 jugadores';
-      return readyCount < 2 ? 'Pulsad "Repartir" para empezar' : `Empieza pronto${secs !== null ? ` · ${secs}s` : ''}`;
+      return readyCount < 2 ? 'Presionen "Repartir" para empezar' : `Empieza pronto${secs !== null ? ` · ${secs}s` : ''}`;
     }
     if (pk.phase === 'showdown') return 'Fin de la mano';
     if (pk.toAct) return pk.toAct === net.pid ? `Tu turno${secs !== null ? ` · ${secs}s` : ''}` : `Turno de ${nameOf(pk.toAct)}`;

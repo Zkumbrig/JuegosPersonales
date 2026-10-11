@@ -36,6 +36,7 @@ export class Party {
   private times: PartyPublic['times'] = null;
   private tally = new Map<string, number>();
   private decks = new Map<string, number[]>();
+  private lastDrawn = new Map<string, number>();
   private reaction = new Map<string, number | 'early'>();
   private kingsDeck: { r: string; s: Suit }[] = [];
   private lastTarget: string | null = null;
@@ -96,14 +97,20 @@ export class Party {
     }
   }
 
-  /** Saca una carta sin repetir hasta agotar el mazo, respetando el nivel elegido. */
+  /**
+   * Saca una carta sin repetir hasta agotar el mazo. Solo salen las del nivel elegido (el "Extremo" no se diluye con
+   * frases suaves); al reiniciar el mazo, la última carta no abre el siguiente.
+   */
   private draw(key: string, list: Item[]): Item {
-    let deck = (this.decks.get(key) ?? []).filter((i) => list[i].level <= this.level);
+    let deck = (this.decks.get(key) ?? []).filter((i) => list[i].level === this.level);
     if (deck.length === 0) {
-      deck = shuffle(list.map((_, i) => i).filter((i) => list[i].level <= this.level));
+      deck = shuffle(list.map((_, i) => i).filter((i) => list[i].level === this.level));
+      const last = this.lastDrawn.get(key);
+      if (deck.length > 1 && deck[deck.length - 1] === last) deck.unshift(deck.pop()!);
     }
     const i = deck.pop()!;
     this.decks.set(key, deck);
+    this.lastDrawn.set(key, i);
     return list[i];
   }
 

@@ -1,6 +1,6 @@
 # Royale Club
 
-Casino entre amigos para jugar desde el móvil: **blackjack, ruleta y tragaperras** con
+Casino entre amigos para jugar desde el celular: **blackjack, ruleta y tragaperras** con
 **fichas virtuales** (sin dinero real), sin anuncios y con estética de casino de lujo.
 Cada jugador entra desde su teléfono a una mesa con código de 4 letras.
 
@@ -15,7 +15,7 @@ npm install
 npm run dev      # servidor (3001) + Vite (5173), con recarga en vivo
 ```
 
-Abre `http://localhost:5173`. Para probar con el móvil en la misma WiFi, usa la IP de tu PC
+Abre `http://localhost:5173`. Para probar con el celular en la misma WiFi, usa la IP de tu PC
 (`http://192.168.x.x:5173`).
 
 ```bash
@@ -42,7 +42,7 @@ El anfitrión (el que crea la mesa) elige el juego; solo se puede cambiar entre 
 
 ## Zona Fiesta (+18)
 
-Selector **Casino | Fiesta** en la sala. En Fiesta, cada uno juega desde su móvil y las respuestas son **secretas hasta la revelación**:
+Selector **Casino | Fiesta** en la sala. En Fiesta, cada uno juega desde su celular y las respuestas son **secretas hasta la revelación**:
 
 | Juego | Cómo funciona |
 |---|---|
@@ -50,7 +50,7 @@ Selector **Casino | Fiesta** en la sala. En Fiesta, cada uno juega desde su móv
 | ¿Quién es más probable? | Voto secreto a una persona; el más votado bebe. |
 | Preferirías… | Dos opciones; la minoría bebe (empate o unanimidad: brindis). |
 | Verdad o reto | Turnos rotativos; quien está en el centro elige, el grupo lo ve y puede "pasar y beber". |
-| Duelo de reflejos | Rojo → verde; bebe el más lento, el que no llega y quien se adelanta. Cada móvil mide su propio tiempo, así la latencia no decide. |
+| Duelo de reflejos | Rojo → verde; bebe el más lento, el que no llega y quien se adelanta. Cada celular mide su propio tiempo, así la latencia no decide. |
 | Rey de copas | Baraja compartida; cada carta es una regla; el cuarto Rey bebe el vaso central. |
 
 - **Intensidad** Suave / Picante / Extremo (el anfitrión la cambia en cualquier momento).
@@ -65,7 +65,7 @@ Selector **Casino | Fiesta** en la sala. En Fiesta, cada uno juega desde su móv
 No es el típico "casino negro y dorado". La firma del diseño:
 
 - **Foil holográfico** (`--foil` en `src/app.css`): un degradado iridiscente en logotipo, botones principales, medallones y selección. Cada estilo tiene su propio foil (champán, cian-magenta, rubí, plata).
-- **Iconos propios** (`src/lib/icons.ts`): una sola familia de ~35 iconos dibujados a mano en SVG (trazo + relleno translúcido, color por `currentColor`), los símbolos de la tragaperras (`SlotSym.svelte`) y los palos de las cartas. **No hay ningún emoji**, así que se ve igual en cualquier móvil. Para añadir uno: una línea en `icons.ts` y `<Icon name="..." />`.
+- **Iconos propios** (`src/lib/icons.ts`): una sola familia de ~35 iconos dibujados a mano en SVG (trazo + relleno translúcido, color por `currentColor`), los símbolos de la tragaperras (`SlotSym.svelte`) y los palos de las cartas. **No hay ningún emoji**, así que se ve igual en cualquier celular. Para añadir uno: una línea en `icons.ts` y `<Icon name="..." />`.
 - **Boletos**: las tarjetas de juego y de pregunta llevan muescas laterales (clase `.ticket`, una máscara estática).
 - **Rayos art déco** en la cabecera (un solo degradado cónico) y **destello de foil** en los botones (solo `transform`).
 - **Tipografía**: Unbounded (ancha, con carácter) para títulos, botones y números; el resto, la fuente del sistema.
@@ -76,7 +76,7 @@ Cuatro estilos (botón 🎨): **Esmeralda** (por defecto), **Neón**, **Rubí** 
 (`src/app.css`), así que cambiar de estilo es instantáneo y no cuesta peso. Para crear otro, añade un bloque
 `[data-theme='nombre']` y una entrada en `src/lib/theme.svelte.ts`.
 
-Reglas para mantener la fluidez en móviles modestos:
+Reglas para mantener la fluidez en celulares modestos:
 - Solo se animan `transform` y `opacity` (GPU). Nada de animar `box-shadow`, `filter` ni `backdrop-filter`.
 - El grano del fieltro es un SVG diminuto estático; no hay imágenes ni fuentes pesadas.
 - Las monedas de celebración son ~14 elementos y se eliminan solas a los 3 s.
@@ -94,7 +94,7 @@ public/     manifest, icono, service worker
 ## Para engancharse (ola 2)
 
 - **QR de invitación:** el código de la mesa abre una hoja con "Código QR" (tamaño grande y fondo blanco para que cualquier cámara lo lea). El enlace lleva el código, y quien lo abre ve "Te han invitado a la mesa XXXX".
-- **Resumen de la noche:** desde esa misma hoja se genera una **imagen** (1080 px, con los colores del estilo activo) con los premios: *Rey de los tragos*, *Dedos de rayo* (mejor tiempo de reflejos), *El suertudo* (mayor premio), *El tiburón* (más fichas), *El deudor del banco* y *El farolero* (póker sin enseñar cartas). Solo se reparten premios con datos reales; los empates se comparten. Se comparte con la hoja nativa del móvil o se guarda. Las estadísticas viven en la mesa y sobreviven a reinicios.
+- **Resumen de la noche:** desde esa misma hoja se genera una **imagen** (1080 px, con los colores del estilo activo) con los premios: *Rey de los tragos*, *Dedos de rayo* (mejor tiempo de reflejos), *El suertudo* (mayor premio), *El tiburón* (más fichas), *El deudor del banco* y *El farolero* (póker sin enseñar cartas). Solo se reparten premios con datos reales; los empates se comparten. Se comparte con la hoja nativa del celular o se guarda. Las estadísticas viven en la mesa y sobreviven a reinicios.
 - **Reacciones:** barra fija abajo con seis iconos (risa, sorpresa, corazón, fuego, salud, brillo). Flotan para toda la mesa con el nombre de quien reacciona y se limitan para que nadie haga spam.
 - **Reglas:** el botón "?" de la cabecera explica el juego en el que estés (pagos, turnos, ranking de manos del póker...). Late una vez por juego hasta que se abre. El texto está en `src/lib/rules.ts`.
 - El QR, las reglas y el resumen se descargan solo cuando se abren, para que la carga inicial siga siendo ligera.
@@ -102,7 +102,7 @@ public/     manifest, icono, service worker
 ## Perfil, logros y pantalla grande (ola 3)
 
 - **Perfil y logros** (hoja "Mesa" → "Mi perfil"): mesas jugadas, rondas, tragos, mejor tiempo de reflejos, mayor premio y faroles, acumulados **entre mesas**. Ocho logros (*Bienvenido al club*, *De la casa*, *Rata de casino*, *Sed de fiesta*, *Dedos de rayo*, *Gran golpe*, *Cara de póker*, *Cliente del banco*) que avisan al desbloquearse. Es anónimo: se identifica por el navegador, sin cuenta ni correo, y se guarda en `data/*.profiles.json`. Si se borran los datos del navegador, se empieza de cero. Las condiciones de cada logro están en `server/profiles.ts`.
-- **Pantalla grande (TV):** abre `/?tv=CODIGO` en una tele o un portátil (o desde la portada: "Abrir pantalla"). Muestra la mesa en grande, con el código y el QR para que se una más gente, la rueda de la ruleta, las cartas comunes del póker, las preguntas de la fiesta y el marcador. **Solo mira**: no cuenta como jugador, no ve cartas ni respuestas privadas y no puede actuar. Máximo 3 pantallas por mesa; una pantalla ya conocida puede reconectar aunque la mesa esté cerrada.
+- **Pantalla grande (TV):** abre `/?tv=CODIGO` en una tele o un laptop (o desde la portada: "Abrir pantalla"). Muestra la mesa en grande, con el código y el QR para que se una más gente, la rueda de la ruleta, las cartas comunes del póker, las preguntas de la fiesta y el marcador. **Solo mira**: no cuenta como jugador, no ve cartas ni respuestas privadas y no puede actuar. Máximo 3 pantallas por mesa; una pantalla ya conocida puede reconectar aunque la mesa esté cerrada.
 - Para probar el blackjack con cartas fijas hay una ayuda: arranca el servidor con `DEBUG_BJ_DECK="8S,6D,8H,10C,..."` (rango+palo; reparte primero: jugador, crupier, jugador, crupier). Sin esa variable no hace nada.
 
 ## Fiabilidad
@@ -112,7 +112,7 @@ public/     manifest, icono, service worker
 - **Mesas que sobreviven a reinicios:** el servidor guarda las mesas en `data/rooms.json` cada 10 s y al apagarse, y las recupera al arrancar con las fichas de cada uno. Lo que estaba apostado en una ronda sin terminar se **devuelve** (la ronda queda anulada). Si nadie vuelve en 10 min, la mesa se borra.
 - **Abusos:** límite de ritmo por conexión (ráfagas de 40 y 25 mensajes/s sostenidos; si insiste, se corta), máximo de conexiones por IP y bloqueo de 3 min tras 12 códigos de mesa erróneos en un minuto.
 - **Errores inesperados:** se registran y no tumban el servidor ni las demás mesas.
-- **Pantalla encendida** mientras estás en una mesa (donde el navegador lo permita), para que el móvil no se duerma y se corte la conexión.
+- **Pantalla encendida** mientras estás en una mesa (donde el navegador lo permita), para que el celular no se duerma y se corte la conexión.
 
 Variables de entorno, todas opcionales: `PORT`, `DATA_FILE`, `PERSIST_MS`, `TRUST_PROXY=1` (**actívala detrás de un proxy** para que los límites usen la IP real), `HOST_GRACE_MS`, `RATE_BURST`, `RATE_PER_SEC`, `MAX_CONN_PER_IP`, `JOIN_FAILS_MAX`.
 

@@ -56,9 +56,9 @@ Pon delante Caddy o Nginx con HTTPS y reenvío de WebSockets a `localhost:3001`.
 
 ## Después de publicar: lista de comprobación
 
-- [ ] Dos móviles entran a la misma mesa con el código y con el QR.
+- [ ] Dos celulares entran a la misma mesa con el código y con el QR.
 - [ ] Jugar una ronda de cada juego, y que el anfitrión cambie de juego.
-- [ ] Abrir `/?tv=CODIGO` en un portátil o una tele.
-- [ ] Apagar la pantalla de un móvil 10 segundos y comprobar que vuelve a la mesa.
-- [ ] Compartir la imagen del resumen de la noche desde un móvil.
+- [ ] Abrir `/?tv=CODIGO` en un laptop o una tele.
+- [ ] Apagar la pantalla de un celular 10 segundos y comprobar que vuelve a la mesa.
+- [ ] Compartir la imagen del resumen de la noche desde un celular.
 - [ ] Instalar la app desde el navegador (icono de instalar / "Añadir a pantalla de inicio").

@@ -78,7 +78,7 @@
   {/if}
 
   <p class="care muted">
-    Bebed con moderación y solo si queréis. Cualquier reto se puede rechazar. Si alguien ha bebido de más,
+    Beban con moderación y solo si quieren. Cualquier reto se puede rechazar. Si alguien ha bebido de más,
     el siguiente trago es agua. Nadie conduce después de beber.
   </p>
 </div>

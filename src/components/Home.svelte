@@ -63,7 +63,7 @@
   </section>
 
   <section class="tvbox">
-    <p class="muted"><Icon name="tv" size={16} /> ¿Tienes una tele o un portátil? Úsalo como pantalla de la mesa.</p>
+    <p class="muted"><Icon name="tv" size={16} /> ¿Tienes una tele o una laptop? Úsalo como pantalla de la mesa.</p>
     <div class="join">
       <input
         class="code"

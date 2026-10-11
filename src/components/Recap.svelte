@@ -62,7 +62,7 @@
     {#if status === 'loading'}
       <p class="muted center">Preparando la imagen…</p>
     {:else if status === 'empty'}
-      <p class="muted center">Todavía no hay premios que repartir. Jugad unas rondas y vuelve por aquí.</p>
+      <p class="muted center">Todavía no hay premios que repartir. Jueguen unas rondas y vuelvan por aquí.</p>
     {:else if status === 'error'}
       <p class="muted center">No se pudo crear la imagen en este navegador.</p>
     {:else}

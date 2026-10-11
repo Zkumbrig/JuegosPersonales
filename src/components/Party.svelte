@@ -92,7 +92,7 @@
               <p class="who">{names(pa.drinkers)}</p>
             {:else}
               <h3 class="display">Nadie lo ha hecho</h3>
-              <p class="muted">Qué santos sois… o qué mentirosos.</p>
+              <p class="muted">Qué santos son… o qué mentirosos.</p>
             {/if}
           </section>
         {/if}
@@ -131,7 +131,7 @@
     <!-- ===================== Preferirías… ===================== -->
     {:else if game === 'would'}
       {#if pa.phase === 'idle'}
-        {@render intro('Elige una de las dos opciones. La minoría bebe; si hay empate, brindáis.')}
+        {@render intro('Elige una de las dos opciones. La minoría bebe; si hay empate, brindan.')}
       {:else if pa.options}
         <div class="options">
           {#each [['A', pa.options[0], wouldA], ['B', pa.options[1], wouldB]] as const as [key, text, who] (key)}
@@ -160,7 +160,7 @@
               <p class="who">{names(pa.drinkers)}</p>
             {:else}
               <h3 class="display">{wouldA.length === wouldB.length ? '¡Empate!' : '¡Unanimidad!'}</h3>
-              <p class="muted">{wouldA.length === wouldB.length ? 'Nadie bebe… brindad.' : 'Nadie es minoría. Brindad.'}</p>
+              <p class="muted">{wouldA.length === wouldB.length ? 'Nadie bebe… brinden.' : 'Nadie es minoría. Brinden.'}</p>
             {/if}
           </section>
         {/if}

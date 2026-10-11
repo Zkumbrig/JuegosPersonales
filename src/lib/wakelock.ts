@@ -1,5 +1,5 @@
 /**
- * Mantiene la pantalla encendida mientras se juega: si el móvil se apaga, se corta la conexión
+ * Mantiene la pantalla encendida mientras se juega: si el celular se apaga, se corta la conexión
  * y la mesa se queda esperando. Es una mejora opcional (no todos los navegadores la admiten).
  */
 let sentinel: WakeLockSentinel | null = null;

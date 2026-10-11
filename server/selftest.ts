@@ -199,7 +199,7 @@ console.log('Unidades OK');
 
 // ---------- Contenido de la fiesta ----------
 {
-  const MIN: Record<string, number> = { never: 36, likely: 32, would: 24, truth: 20, dare: 20 };
+  const MIN: Record<string, number> = { never: 55, likely: 50, would: 40, truth: 45, dare: 45 };
   const lists: Record<string, { text: string; level: number }[]> = {
     never: NEVER, likely: LIKELY, truth: TRUTHS, dare: DARES,
     would: WOULD.map((w) => ({ text: w.a + ' | ' + w.b, level: w.level })),

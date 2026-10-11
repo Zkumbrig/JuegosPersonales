@@ -63,7 +63,7 @@
         {:catch}
           <small class="muted">No se pudo cargar el QR. Recarga la página.</small>
         {/await}
-        <small class="muted">Que lo escaneen con la cámara del móvil para entrar a la mesa {room.code}.</small>
+        <small class="muted">Que lo escaneen con la cámara del celular para entrar a la mesa {room.code}.</small>
       </div>
     {/if}
 
@@ -106,7 +106,7 @@
     <button class="btn btn-ghost" onclick={() => (showTv = !showTv)} aria-expanded={showTv}><Icon name="tv" size={16} /> Pantalla grande (TV)</button>
     {#if showTv}
       <div class="tvinfo">
-        <p>Abre este enlace en la tele o el portátil. Verá la mesa en grande, sin cartas privadas, y no cuenta como jugador:</p>
+        <p>Abre este enlace en la tele o la laptop. Verá la mesa en grande, sin cartas privadas, y no cuenta como jugador:</p>
         <code>{tvUrl}</code>
         <button class="btn btn-ghost" onclick={copyTv}>{tvCopied ? 'Copiado' : 'Copiar enlace de la pantalla'}</button>
       </div>

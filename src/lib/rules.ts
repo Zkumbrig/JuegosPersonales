@@ -37,7 +37,7 @@ export const RULES: Record<GameId, Rules> = {
   },
   slots: {
     title: 'Tragaperras', icon: 'slots',
-    lead: 'Elige tu apuesta y pulsa Girar.',
+    lead: 'Elige tu apuesta y presiona Girar.',
     points: [
       'Tres símbolos iguales dan premio: siete ×200, diamantes ×50, campanas ×20, limones ×10, cerezas ×5.',
       'Dos cerezas devuelven tu apuesta (×1).',
@@ -52,7 +52,7 @@ export const RULES: Record<GameId, Rules> = {
       'Cada jugador recibe 2 cartas privadas y hay 5 comunitarias (flop de 3, turn y river). Tu mano es la mejor combinación de 5 entre tus 2 y las 5 de la mesa.',
       'En tu turno: Retirarte, Pasar o Igualar, o Subir (como mínimo lo mismo que la última subida). All-in es apostarlo todo.',
       'Gana quien tenga la mejor mano al final o quien se quede solo porque todos se retiran. Los all-in crean botes aparte.',
-      'Cada mano empieza cuando todos pulsan Repartir (o 10 s después del segundo jugador listo). Tienes 25 s por turno.',
+      'Cada mano empieza cuando todos presionan Repartir (o 10 s después del segundo jugador listo). Tienes 25 s por turno.',
     ],
     ranking: {
       title: 'Manos, de mayor a menor',
@@ -61,25 +61,25 @@ export const RULES: Record<GameId, Rules> = {
   },
   party: {
     title: 'Zona Fiesta', icon: 'party',
-    lead: 'Seis juegos para jugar cada uno desde su móvil.',
+    lead: 'Seis juegos para jugar cada uno desde su celular.',
     points: [
       'El anfitrión elige el juego y la intensidad: Suave, Picante o Extremo.',
       'Las respuestas son secretas y se revelan a la vez cuando contesta todo el mundo.',
       'Modo sin alcohol: "beber" pasa a ser "perder un punto". Sirve para quien conduce o no bebe.',
-      'Nadie está obligado a nada: cualquier reto se puede rechazar. Bebed con moderación y alternad con agua.',
+      'Nadie está obligado a nada: cualquier reto se puede rechazar. Beban con moderación y alternen con agua.',
     ],
   },
   never: {
     title: 'Yo nunca', icon: 'never',
     lead: 'Sale una frase que empieza por "Yo nunca…".',
     points: [
-      'Pulsa "Yo sí" si lo has hecho o "Yo no" si no. Nadie ve tu respuesta hasta que contestan todos.',
+      'Presiona "Yo sí" si lo has hecho o "Yo no" si no. Nadie ve tu respuesta hasta que contestan todos.',
       'Beben quienes dijeron "Yo sí". El anfitrión pasa a la siguiente frase.',
     ],
   },
   likely: {
     title: '¿Quién es más probable?', icon: 'likely',
-    lead: 'Sale una situación y votáis a la persona que mejor encaja.',
+    lead: 'Sale una situación y votan por la persona que mejor encaja.',
     points: [
       'Tu voto es secreto hasta que votan todos. Puedes votarte a ti.',
       'La persona con más votos bebe. Si hay empate en lo más alto, beben todos los empatados.',
@@ -90,7 +90,7 @@ export const RULES: Record<GameId, Rules> = {
     lead: 'Dos opciones, una sola elección.',
     points: [
       'Elige A o B. Se revela a la vez cuando todos han elegido.',
-      'Bebe la minoría. Si hay empate o todos coinciden, nadie bebe: brindáis.',
+      'Bebe la minoría. Si hay empate o todos coinciden, nadie bebe: brindan.',
     ],
   },
   truth: {
@@ -108,7 +108,7 @@ export const RULES: Record<GameId, Rules> = {
     points: [
       'Si tocas antes de que se ponga verde, te adelantas y bebes.',
       'Bebe también quien no llega a tocar, o el más lento si todos tocaron a tiempo.',
-      'Cada móvil mide su propio tiempo desde que le llega el aviso, para que la conexión no decida.',
+      'Cada celular mide su propio tiempo desde que le llega el aviso, para que la conexión no decida.',
     ],
   },
   kings: {
@@ -117,7 +117,7 @@ export const RULES: Record<GameId, Rules> = {
     points: [
       'Cada carta tiene una regla distinta que aparece en pantalla.',
       'Con los Reyes se llena el vaso central: quien saque el cuarto se lo bebe entero.',
-      'Con el modo sin alcohol, "beber" se cambia por perder puntos.',
+      'En el modo sin alcohol, "beber" se cambia por perder puntos.',
     ],
   },
 };

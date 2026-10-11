@@ -189,7 +189,7 @@ export async function renderRecap(stats: RoomStats, soft: boolean, code: string)
   if (awards.length === 0) {
     c.fillStyle = muted;
     c.font = `500 30px ${FONT}`;
-    c.fillText('Todavía no hay premios: ¡jugad unas rondas!', W / 2, 640);
+    c.fillText('Todavía no hay premios: ¡jueguen unas rondas!', W / 2, 640);
   }
   awards.forEach((a, i) => {
     const y = 580 + i * ROW;

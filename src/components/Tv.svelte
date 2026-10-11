@@ -58,7 +58,7 @@
   const dealerTotal = $derived(bj ? handTotal(bj.dealer).total : 0);
   const bjStatus = $derived.by(() => {
     if (!bj) return '';
-    if (bj.phase === 'betting') return bj.seats.length ? 'Apuestas abiertas' : 'Haced vuestras apuestas';
+    if (bj.phase === 'betting') return bj.seats.length ? 'Apuestas abiertas' : 'Hagan sus apuestas';
     if (bj.phase === 'insurance') return 'Seguro: el crupier enseña un As';
     if (bj.phase === 'playing') return bj.turn ? `Turno de ${nameOf(bj.turn)}` : '…';
     if (bj.phase === 'dealer') return 'Juega el crupier';
@@ -76,7 +76,7 @@
     Object.entries(ro?.bets ?? {}).map(([id, list]) => ({ id, total: list.reduce((n, b) => n + b.amount, 0) })).filter((x) => x.total > 0),
   );
   const colorOf = (n: number) => ([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36].includes(n) ? 'red' : n === 0 ? 'green' : 'black');
-  const roStatus = $derived(ro?.phase === 'betting' ? (betTotals.length ? 'Apuestas abiertas' : 'Haced vuestras apuestas') : ro?.phase === 'spinning' ? 'No va más…' : `Salió el ${ro?.result}`);
+  const roStatus = $derived(ro?.phase === 'betting' ? (betTotals.length ? 'Apuestas abiertas' : 'Hagan sus apuestas') : ro?.phase === 'spinning' ? 'No va más…' : `Salió el ${ro?.result}`);
 
   // ---- Póker ----
   const PHASE: Record<string, string> = { waiting: 'Esperando jugadores', preflop: 'Pre-flop', flop: 'Flop', turn: 'Turn', river: 'River', showdown: 'Showdown' };
@@ -165,7 +165,7 @@
       {:else if game === 'slots'}
         <div class="center">
           <span class="bigicon"><Icon name="slots" size={84} /></span>
-          <p class="status">Cada uno juega la suya en su móvil</p>
+          <p class="status">Cada uno juega la suya en su celular</p>
           <p class="muted">Los premios gordos aparecen abajo en el marcador.</p>
         </div>
 
@@ -189,7 +189,7 @@
                 {#if pk.phase === 'showdown' && s.delta !== undefined && s.inHand}<span class="d" class:pos={s.delta > 0} class:neg={s.delta < 0}>{signed(s.delta)}</span>{/if}
               </div>
             {:else}
-              <p class="muted">Siéntate a la mesa desde tu móvil.</p>
+              <p class="muted">Siéntate a la mesa desde tu celular.</p>
             {/each}
           </div>
         </div>
@@ -222,7 +222,7 @@
                   </li>
                 {/each}
               </ol>
-            {:else}<b>Duelo de reflejos</b><small>El anfitrión lo lanza desde su móvil</small>{/if}
+            {:else}<b>Duelo de reflejos</b><small>El anfitrión lo lanza desde su celular</small>{/if}
           </div>
         {:else if pa.phase === 'idle'}
           <div class="center"><span class="bigicon"><Icon name={gameIcon} size={84} /></span><p class="status">Esperando al anfitrión…</p></div>
@@ -286,7 +286,7 @@
             {:else}
               <p class="verdict">
                 {#if pa.drinkers.length}<Icon name={soft ? 'minus' : 'drink'} size={44} /> {soft ? 'Pierden un punto' : '¡Beben!'} <b>{names(pa.drinkers)}</b>
-                {:else}{g === 'never' ? 'Nadie lo ha hecho' : 'Nadie bebe: brindad'}{/if}
+                {:else}{g === 'never' ? 'Nadie lo ha hecho' : 'Nadie bebe: brinden'}{/if}
               </p>
             {/if}
           {/if}
