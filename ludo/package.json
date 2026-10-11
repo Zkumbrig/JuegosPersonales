@@ -1,0 +1,15 @@
+{
+  "name": "ludo",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Ludo online para 4, 6 y 8 jugadores. Dos proyectos independientes: server (API + WebSocket) y client (SvelteKit).",
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "start": "npm --prefix server run start",
+    "check": "npm --prefix server run check && npm --prefix client run check",
+    "test": "npm --prefix server test && npm --prefix client test"
+  }
+}
