@@ -230,3 +230,15 @@ process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
 
 server.listen(PORT, () => console.log(`Royale Club escuchando en http://localhost:${PORT}`));
+
+// ---------- Mantener despierto el servicio (Render, plan gratuito) ----------
+// Render duerme el servicio tras 15 min sin tráfico ENTRANTE. Un ping a localhost no pasa por su proxy y no
+// cuenta, así que el servidor se llama a sí mismo por su URL pública (RENDER_EXTERNAL_URL, que pone Render).
+// Solo actúa en Render; KEEPALIVE=0 lo desactiva. Ojo: el plan gratuito da 750 h al mes por cuenta.
+const SELF_URL = process.env.RENDER_EXTERNAL_URL || process.env.KEEPALIVE_URL;
+if (SELF_URL && process.env.KEEPALIVE !== '0') {
+  const every = Number(process.env.KEEPALIVE_MS) || 4 * 60_000;
+  const ping = () => fetch(new URL('/healthz', SELF_URL), { signal: AbortSignal.timeout(10_000) }).catch(() => { /* sin red un momento: se reintenta */ });
+  setInterval(ping, every).unref();
+  console.log(`Keep-alive: ping a ${SELF_URL}/healthz cada ${Math.round(every / 1000)} s`);
+}

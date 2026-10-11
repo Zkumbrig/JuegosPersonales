@@ -21,9 +21,11 @@ las mesas viven en la memoria de un único servidor). Sí sirven Render, Railway
 1. Sube el proyecto a un repositorio de GitHub (no incluyas `node_modules`, `dist` ni `data`: ya están en `.gitignore`).
 2. En Render: **New → Blueprint** y elige el repositorio. Lee `render.yaml` (plan gratuito, una instancia).
 3. Cuando termine, abre la URL `https://royale-club-xxxx.onrender.com`.
-4. Para jugar: abre la URL **un par de minutos antes** para que despierte. Si quieres que no se duerma durante la tarde,
-   un monitor externo que consulte `/healthz` cada 10 minutos lo mantiene despierto (una sola app gasta unas 744 de las
-   750 horas gratuitas del mes).
+4. **No se duerme:** en Render el servidor se llama a sí mismo por su URL pública (`RENDER_EXTERNAL_URL`) a `/healthz`
+   cada 4 minutos, y eso cuenta como tráfico entrante (un ping a `localhost` no contaría). Se desactiva con
+   `KEEPALIVE=0` y el intervalo se cambia con `KEEPALIVE_MS`. Cuidado con las horas: el plan gratuito da **750 h al mes
+   por cuenta** y una app encendida todo el mes gasta unas 744, así que **solo una app puede estar siempre despierta**.
+   Si hay otra en el mismo Blueprint (por ejemplo `ludo-club`), se suspende al agotarse las horas: bórrala o déjala dormir.
 5. Límites: se pierden mesas y perfiles al dormirse o reiniciarse. Para uso continuo: plan de pago + disco (bloque
    comentado en `render.yaml`).
 
