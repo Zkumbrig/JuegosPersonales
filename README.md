@@ -58,7 +58,7 @@ Selector **Casino | Fiesta** en la sala. En Fiesta, cada uno juega desde su móv
 - **Marcador "Tragos de la noche"** por mesa.
 - Si alguien pierde la conexión se le espera 8 s antes de seguir sin su respuesta.
 - El contenido está en `server/content.ts` (frases por nivel): es el fichero a editar para añadir o cambiar preguntas.
-  Reglas de la casa: adulto pero nada gráfico ni peligroso, y todo reto se puede rechazar bebiendo.
+  Reglas de la casa: el nivel **Extremo** es de verdad para adultos (sexo, fantasías, infidelidad, sexting), pero nada gráfico ni peligroso, nada de desnudos forzados, y todo reto se puede rechazar bebiendo.
 
 ## Identidad visual
 
