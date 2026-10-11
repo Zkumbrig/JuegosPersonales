@@ -24,6 +24,13 @@ export const ICONS: Record<string, string> = {
     '<circle class="d" cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.6"/>' +
     '<path d="M12 3v3.2M12 17.8V21M3 12h3.2M17.8 12H21"/>',
 
+  // ----- Ludo -----
+  zoom: '<circle class="d" cx="11" cy="11" r="6.6"/><path d="M16 16l4.6 4.6M11 8.4v5.2M8.4 11h5.2"/>',
+  ludo:
+    '<circle class="d" cx="12" cy="6.4" r="3"/><path class="d" d="M12 10.4c-2.5 1.1-3.4 3.2-3.1 5.4L7 20.5h10l-1.9-4.7c.3-2.2-.6-4.3-3.1-5.4z"/>',
+  dice:
+    '<rect class="d" x="3.5" y="3.5" width="17" height="17" rx="4"/>' + dot(8.5, 8.5, 1.3) + dot(15.5, 15.5, 1.3) + dot(12, 12, 1.3) + dot(15.5, 8.5, 1.3) + dot(8.5, 15.5, 1.3),
+
   // ----- Juegos de fiesta -----
   party:
     '<path class="d" d="M5.5 4h10l-.9 5.2a4.1 4.1 0 0 1-8.2 0L5.5 4z"/><path d="M10.5 13.3V20M7.5 20.5h6"/><path d="M19 3v4M17 5h4"/>',

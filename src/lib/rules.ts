@@ -59,6 +59,18 @@ export const RULES: Record<GameId, Rules> = {
       items: ['Escalera de color', 'Póker (cuatro iguales)', 'Full (trío y pareja)', 'Color (cinco del mismo palo)', 'Escalera', 'Trío', 'Doble pareja', 'Pareja', 'Carta alta'],
     },
   },
+  ludo: {
+    title: 'Ludo', icon: 'ludo',
+    lead: 'El clásico de casa: lleva tus 4 peones a la meta antes que nadie. Tableros de 4, 6 y 8 jugadores.',
+    points: [
+      'Cada turno tiras el dado. Solo con un 6 puedes sacar un peón de casa; si hay varias jugadas, tú eliges el peón.',
+      'Un 6 te da otra tirada. Tres seises seguidos y pierdes el turno.',
+      'Si caes sobre un peón rival lo mandas a casa y vuelves a tirar. Las casillas con estrella y la salida de cada color son seguras.',
+      'Tras dar la vuelta entras al pasillo de tu color. Para llegar a la meta hace falta el tiro justo (se puede desactivar).',
+      'El anfitrión elige el tablero (4, 6 u 8), los bots y las reglas: tiempo por turno, parejas protegidas y fin al primer ganador.',
+      'Si no juegas a tiempo, el juego mueve por ti. Si te desconectas, tu lugar se guarda y vuelves donde lo dejaste.',
+    ],
+  },
   party: {
     title: 'Zona Fiesta', icon: 'party',
     lead: 'Seis juegos para jugar cada uno desde su celular.',

@@ -1,5 +1,6 @@
 // Autoprueba: npm test  (arranca el servidor en el puerto 3999 y juega rondas reales)
 process.env.PORT = '3999';
+process.env.LUDO_FAST = '1'; // los bots del Ludo juegan sin pausas
 // La autoprueba no debe leer ni escribir las mesas reales del proyecto.
 import os from 'node:os';
 import nodePath from 'node:path';
@@ -620,6 +621,47 @@ console.log(`Tragaperras OK: ${a.slot!.reels.join(' ')} → ${a.slot!.win}`);
   console.log(`Fiesta: Estadísticas OK (${stats.rounds} rondas)`);
 
   await setGame('slots');
+}
+
+// ---------- Ludo por WebSocket ----------
+{
+  const lu = () => a.room.ludo;
+  a.send({ t: 'game', game: 'ludo' });
+  await until(() => a.room.game === 'ludo' && b.room.game === 'ludo', 'cambio a Ludo', 10_000);
+  b.errors.length = 0;
+  b.send({ t: 'lu:config', patch: { board: 6 } });
+  await until(() => b.errors.length > 0, 'solo el anfitrión configura el Ludo');
+  a.send({ t: 'lu:config', patch: { board: 6, bots: 2, turnSeconds: 0 } });
+  await until(() => lu().options.board === 6 && lu().seats.length === 4, 'preparación del Ludo');
+  assert.equal(new Set(lu().seats.map((s) => s.arm)).size, 4, 'cada uno con su color');
+  b.errors.length = 0;
+  b.send({ t: 'lu:start' });
+  await until(() => b.errors.length > 0, 'solo el anfitrión empieza');
+  a.send({ t: 'lu:start' });
+  await until(() => lu().phase === 'playing' && b.room.ludo.phase === 'playing', 'empieza el Ludo');
+  a.errors.length = 0;
+  a.send({ t: 'game', game: 'slots' });
+  await until(() => a.errors.length > 0, 'no se cambia de juego con una partida de Ludo en curso');
+
+  // Las dos personas juegan lo que les toca (primer peón posible) mientras los bots juegan solos.
+  const play = (c: Client) => {
+    const l = c.room.ludo;
+    const t = l.turn;
+    if (l.phase !== 'playing' || t?.playerId !== c.pid) return;
+    if (t.step === 'roll') c.send({ t: 'lu:roll' });
+    else if (t.step === 'move') c.send({ t: 'lu:move', pawn: t.movable[0]! });
+  };
+  await until(() => { play(a); play(b); return lu().seq >= 80 || lu().phase === 'finished'; }, 'se juegan 80 eventos de Ludo', 60_000);
+  const seats = lu().seats;
+  assert.ok(seats.every((s) => s.pawns.length === 4 && s.pawns.every((p) => p >= 0)));
+  assert.ok(lu().events.length > 0 && lu().events.length <= 14, 'solo se guardan los últimos eventos');
+  assert.deepEqual(a.room.ludo.seats, b.room.ludo.seats, 'todos ven el mismo tablero');
+
+  a.send({ t: 'lu:reset' });
+  await until(() => lu().phase === 'setup', 'el anfitrión cancela la partida');
+  a.send({ t: 'game', game: 'slots' });
+  await until(() => a.room.game === 'slots' && b.room.game === 'slots', 'salir del Ludo', 10_000);
+  console.log('Ludo OK');
 }
 
 // Reconexión con el mismo pid conserva fichas

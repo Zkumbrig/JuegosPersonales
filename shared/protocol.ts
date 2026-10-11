@@ -6,10 +6,13 @@ export const MIN_REBUY_BELOW = 10;
 export const MAX_PLAYERS = 8;
 export const CHIP_VALUES = [10, 50, 100, 500, 1000] as const;
 
+import type { LudoOptions, LudoPublic } from './ludo';
+export * from './ludo';
+
 export type CasinoGame = 'blackjack' | 'roulette' | 'slots' | 'poker';
 export type PartyGame = 'never' | 'likely' | 'would' | 'truth' | 'reflex' | 'kings';
-/** 'party' es el menú de la zona Fiesta. */
-export type GameId = CasinoGame | PartyGame | 'party';
+/** 'party' es el menú de la zona Fiesta; 'ludo' es la zona Ludo (4, 6 u 8 jugadores). */
+export type GameId = CasinoGame | PartyGame | 'party' | 'ludo';
 
 export const GAMES: { id: CasinoGame; name: string; short: string; tagline: string }[] = [
   { id: 'blackjack', name: 'Blackjack', short: 'Blackjack', tagline: 'Mesa compartida · 21' },
@@ -29,6 +32,8 @@ export const PARTY_GAMES: { id: PartyGame; name: string; icon: string; tagline: 
 ];
 
 export const isPartyId = (id: GameId): boolean => id === 'party' || PARTY_GAMES.some((g) => g.id === id);
+export const LUDO_GAME = { id: 'ludo' as const, name: 'Ludo', tagline: 'Hasta 8 jugadores · tableros de 4, 6 y 8' };
+export const isLudoId = (id: GameId): boolean => id === 'ludo';
 export const isCasinoId = (id: GameId): boolean => GAMES.some((g) => g.id === id);
 
 // ---------- Cartas ----------
@@ -223,6 +228,7 @@ export interface RoomPublic {
   roulette: RoulettePublic;
   poker: PokerPublic;
   party: PartyPublic;
+  ludo: LudoPublic;
   locked: boolean; // el anfitrión cerró la mesa a nuevos jugadores
   stats: RoomStats;
   feed: FeedItem[];
@@ -252,6 +258,11 @@ export type ClientMsg =
   | { t: 'po:stand' }
   | { t: 'po:ready' }
   | { t: 'po:act'; action: 'fold' | 'check' | 'call' | 'raise'; amount?: number }
+  | { t: 'lu:config'; patch: Partial<LudoOptions> }
+  | { t: 'lu:start' }
+  | { t: 'lu:roll' }
+  | { t: 'lu:move'; pawn: number }
+  | { t: 'lu:reset' }
   | { t: 'pa:level'; level: PartyLevel }
   | { t: 'pa:soft'; soft: boolean }
   | { t: 'pa:next' }

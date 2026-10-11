@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { GAMES, LEVELS, PARTY_GAMES, isPartyId, type BJHand, type Card, type PartyGame } from '../../shared/protocol';
+  import { GAMES, LEVELS, LUDO_GAME, PARTY_GAMES, isPartyId, type BJHand, type Card, type PartyGame } from '../../shared/protocol';
   import { net } from '../lib/net.svelte';
   import { fmt, handTotal, signed } from '../lib/format';
   import { soften } from '../lib/party';
@@ -12,6 +12,7 @@
   import PlayingCard from './PlayingCard.svelte';
   import ChipStack from './ChipStack.svelte';
   import Reactions from './Reactions.svelte';
+  import LudoTv from './ludo/LudoTv.svelte';
 
   let { code }: { code: string } = $props();
 
@@ -32,7 +33,7 @@
   const names = (ids: string[]) => (ids.length ? ids.map(nameOf).join(', ') : '');
   const info = $derived(
     game && game !== 'party'
-      ? ([...GAMES, ...PARTY_GAMES].find((g) => g.id === game) as { name: string; id: string } | undefined)
+      ? ([...GAMES, ...PARTY_GAMES, LUDO_GAME].find((g) => g.id === game) as { name: string; id: string } | undefined)
       : undefined,
   );
   const gameIcon = $derived(game === 'party' ? 'party' : (info?.id ?? 'chip'));
@@ -142,6 +143,10 @@
             {/each}
           </div>
         </div>
+
+      <!-- ================= LUDO ================= -->
+      {:else if game === 'ludo'}
+        <LudoTv />
 
       <!-- ================= RULETA ================= -->
       {:else if game === 'roulette' && ro}

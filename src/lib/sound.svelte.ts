@@ -48,5 +48,12 @@ export const sfx = {
   pop() { tone(640, 0.07, { type: 'sine', vol: 0.035, slide: 380 }); },
   go() { tone(1320, 0.18, { type: 'square', vol: 0.07 }); },
   drink() { tone(520, 0.12, { type: 'triangle', vol: 0.09 }); tone(390, 0.12, { type: 'triangle', vol: 0.09, at: 0.12 }); tone(260, 0.2, { type: 'triangle', vol: 0.09, at: 0.24 }); },
+  // ----- Ludo -----
+  /** Traqueteo del dado sobre la mesa. */
+  dice() { for (let i = 0; i < 8; i++) tone(260 + Math.random() * 420, 0.04, { type: 'square', vol: 0.028, at: i * 0.075 }); tone(180, 0.12, { type: 'triangle', vol: 0.07, at: 0.62 }); },
+  hop() { tone(520, 0.05, { type: 'triangle', vol: 0.05, slide: 160 }); },
+  thud() { tone(210, 0.26, { type: 'sawtooth', vol: 0.06, slide: -140 }); tone(110, 0.3, { type: 'square', vol: 0.04, at: 0.04, slide: -60 }); },
+  home() { [523, 659, 784].forEach((f, i) => tone(f, 0.16, { type: 'triangle', vol: 0.07, at: i * 0.08 })); },
+  yours() { tone(880, 0.1, { vol: 0.07 }); tone(1320, 0.16, { vol: 0.06, at: 0.09 }); },
   lose() { tone(240, 0.35, { type: 'sawtooth', vol: 0.045, slide: -90 }); },
 };

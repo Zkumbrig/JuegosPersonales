@@ -3,11 +3,12 @@ import { Blackjack } from './blackjack';
 import { Roulette } from './roulette';
 import { Poker } from './poker';
 import { Party } from './party';
+import { Ludo } from './ludo';
 import { spin } from './slots';
 import { isPosInt } from './util';
 import { profiles } from './profiles';
 import {
-  ACHIEVEMENTS, GAMES, MIN_REBUY_BELOW, PARTY_GAMES, REACTIONS, START_CHIPS, isPartyId,
+  ACHIEVEMENTS, GAMES, LUDO_GAME, MIN_REBUY_BELOW, PARTY_GAMES, REACTIONS, START_CHIPS, isPartyId,
   type ClientMsg, type FeedItem, type GameId, type PartyLevel, type ReactionKind, type RoomPublic, type RoomStats, type ServerMsg,
 } from '../shared/protocol';
 
@@ -67,6 +68,7 @@ export class Room {
   readonly ro = new Roulette(this);
   readonly po = new Poker(this);
   readonly pa = new Party(this);
+  readonly lu = new Ludo(this);
 
   constructor(public code: string, private onDestroy: (code: string) => void) {}
 
@@ -75,6 +77,7 @@ export class Room {
     if (p.ws && p.ws !== ws) p.ws.close(4000, 'replaced');
     p.ws = ws;
     clearTimeout(this.reaper);
+    this.lu.onConnect(p.id);
     this.watchHost();
     this.broadcast();
   }
@@ -87,6 +90,7 @@ export class Room {
     if (![...this.players.values()].some((q) => q.ws)) {
       this.reaper = setTimeout(() => this.destroy(), EMPTY_ROOM_TTL);
     }
+    this.lu.onDisconnect(p.id);
     this.pa.onDisconnect(); // se le espera unos segundos antes de seguir sin su respuesta
     this.broadcast();
   }
@@ -96,6 +100,7 @@ export class Room {
     this.ro.onRemove(p.id);
     this.po.onRemove(p.id);
     this.players.delete(p.id);
+    this.lu.onRemove(p.id);
     if (this.players.size === 0) { this.destroy(); return; }
     if (this.hostId === p.id) {
       const next = [...this.players.values()].find((q) => q.ws) ?? [...this.players.values()][0];
@@ -112,6 +117,7 @@ export class Room {
     this.ro.dispose();
     this.po.dispose();
     this.pa.dispose();
+    this.lu.dispose();
     this.onDestroy(this.code);
   }
 
@@ -133,6 +139,7 @@ export class Room {
       roulette: this.ro.toPublic(),
       poker: this.po.toPublic(null),
       party: this.pa.toPublic(null),
+      ludo: this.lu.toPublic(),
       locked: this.locked,
       stats: this.toStats(),
       feed: this.feed.slice(-6),
@@ -233,6 +240,11 @@ export class Room {
       case 'profile:get': return this.send(p, { t: 'profile', profile: profiles.publicOf(p.id) });
       case 'room:kick': return this.kick(p, String(m.pid));
       case 'room:lock': return this.setLocked(p, !!m.locked);
+      case 'lu:config': return this.onlyIn('ludo') ?? this.lu.config(p, m.patch ?? {});
+      case 'lu:start': return this.onlyIn('ludo') ?? this.lu.start(p);
+      case 'lu:roll': return this.onlyIn('ludo') ?? this.lu.roll(p);
+      case 'lu:move': return this.onlyIn('ludo') ?? this.lu.move(p, Number(m.pawn));
+      case 'lu:reset': return this.onlyIn('ludo') ?? this.lu.reset(p);
       case 'pa:level': return this.hostParty(p) ?? this.pa.setLevel(m.level);
       case 'pa:soft': return this.hostParty(p) ?? this.pa.setSoft(m.soft);
       case 'pa:next': return this.inParty() ?? this.pa.next(p);
@@ -430,14 +442,16 @@ export class Room {
 
   private setGame(p: Player, game: GameId): string | void {
     if (p.id !== this.hostId) return 'Solo el anfitrión cambia de juego.';
-    const known = GAMES.some((g) => g.id === game) || PARTY_GAMES.some((g) => g.id === game) || game === 'party';
+    const known = GAMES.some((g) => g.id === game) || PARTY_GAMES.some((g) => g.id === game) || game === 'party' || game === 'ludo';
     if (!known) return 'Juego no válido.';
     if (game === this.game) return;
     if (!this.bj.idle() || !this.ro.idle() || !this.po.idle()) return 'Espera a que termine la ronda en curso.';
+    if (!this.lu.idle()) return 'Hay una partida de Ludo en curso: termínala o cancélala antes de cambiar.';
     if (this.game === 'poker') this.po.cashOutAll(); // todos recuperan sus fichas de la mesa
+    if (this.game === 'ludo') this.lu.back(); // el Ludo vuelve a su preparación
     this.game = game;
     this.pa.reset(); // cada juego de fiesta empieza desde cero (se conserva el marcador)
-    const name = [...GAMES, ...PARTY_GAMES].find((g) => g.id === game)?.name;
+    const name = [...GAMES, ...PARTY_GAMES, LUDO_GAME].find((g) => g.id === game)?.name;
     if (name) this.addFeed(`La mesa cambió a ${name}`);
     this.broadcast();
   }

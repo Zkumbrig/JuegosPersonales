@@ -60,6 +60,16 @@ Selector **Casino | Fiesta** en la sala. En Fiesta, cada uno juega desde su celu
 - El contenido está en `server/content.ts` (frases por nivel): es el fichero a editar para añadir o cambiar preguntas.
   Reglas de la casa: el nivel **Extremo** es de verdad para adultos (sexo, fantasías, infidelidad, sexting), pero nada gráfico ni peligroso, nada de desnudos forzados, y todo reto se puede rechazar bebiendo.
 
+## Ludo (4, 6 y 8 jugadores)
+
+Selector **Casino | Fiesta | Ludo** en la sala. Juegan las personas de la mesa (hasta 8) y el anfitrión puede añadir **bots**. Elige tablero de 4, 6 u 8 brazos y reglas: tiempo por turno, fin al primer ganador, tiro exacto, parejas protegidas y movimiento automático si solo hay una jugada.
+
+- Solo se sale de casa con un **6**; un 6, comer o llegar a la meta dan otra tirada; tres seises seguidos pierden el turno. Las casillas con estrella y las salidas son seguras.
+- El servidor tira los dados y valida cada jugada (`server/ludo.ts`, reglas puras en `shared/ludo.ts`). Quien no responde a tiempo pasa a piloto automático; quien se cae tiene un margen de 8 s y recupera su lugar.
+- El tablero (`src/components/ludo/`) usa el fieltro y el oro de tu tema, **gira para que tu color quede abajo**, tiene dado 3D, peones con salto, efectos de captura y sonidos, y un botón de **Acercar** en tableros grandes. Funciona también en la pantalla compartida (`?tv=CODIGO`).
+- Pruebas: `server/ludotest.ts` (partidas completas en los tres tableros) y un bloque de Ludo en `server/selftest.ts`. Para depurar: `DEBUG_LUDO_DICE=6,3,6,5` fuerza los dados y `LUDO_FAST=1` quita las pausas de los bots.
+- La carpeta `ludo/` es la primera versión independiente (servidor y cliente propios); la zona Ludo de Royale Club es su sucesora.
+
 ## Identidad visual
 
 No es el típico "casino negro y dorado". La firma del diseño:
