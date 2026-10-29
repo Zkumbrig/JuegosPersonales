@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { Card } from '../../shared/protocol';
   import Suit from './Suit.svelte';
 
@@ -8,9 +9,23 @@
   const rank = $derived('hidden' in card ? '' : card.r);
   const suitKey = $derived('hidden' in card ? '' : card.s);
   const face = $derived(rank === 'J' || rank === 'Q' || rank === 'K');
+
+  // Giro 3D cuando una carta boca abajo se destapa (la del crupier). Solo transform.
+  let flip = $state(false);
+  let wasHidden = false;
+  $effect(() => {
+    const h = hidden;
+    untrack(() => {
+      if (wasHidden && !h) {
+        flip = true;
+        setTimeout(() => (flip = false), 520);
+      }
+      wasHidden = h;
+    });
+  });
 </script>
 
-<div class="card" class:back={hidden} class:red class:face style="animation-delay:{delay}ms" role="img" aria-label={hidden ? 'Carta boca abajo' : `${rank} de ${suitKey}`}>
+<div class="card" class:back={hidden} class:red class:face class:flip style="animation-delay:{delay}ms" role="img" aria-label={hidden ? 'Carta boca abajo' : `${rank} de ${suitKey}`}>
   {#if !hidden}
     <span class="corner">{rank}<Suit s={suitKey} size={11} /></span>
     {#if face}
@@ -38,6 +53,17 @@
     flex: none;
   }
   .card.red { color: #b3202e; }
+  /* Brillo suave estático: da volumen de papel satinado sin coste de animación. */
+  .card:not(.back)::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(125deg, rgba(255, 255, 255, 0.55) 0%, transparent 38%, transparent 70%, rgba(0, 0, 0, 0.06) 100%);
+    pointer-events: none;
+  }
+  .card.flip { animation: flip 0.5s cubic-bezier(0.3, 0.7, 0.3, 1); }
+  @keyframes flip { 0% { transform: perspective(500px) rotateY(90deg) scale(1.04); } 100% { transform: perspective(500px) rotateY(0) scale(1); } }
   .corner {
     position: absolute;
     top: 6%;

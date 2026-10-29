@@ -104,6 +104,7 @@
         <text><textPath href="#arc" startOffset="50%" text-anchor="middle">BLACKJACK PAGA 3 A 2</textPath></text>
       </svg>
     {/if}
+    <span class="shoe" aria-hidden="true"><i></i><i></i><i></i></span>
     <div class="dealer">
       <span class="who">Crupier</span>
       <div class="hand big">
@@ -120,9 +121,12 @@
 
     <p class="status" class:urgent={secs !== null && secs <= 5 && bj.phase !== 'payout'}>{status}</p>
 
+    {#if bj.phase === 'betting' && !mySeat}
+      <div class="spot" aria-hidden="true"><span>Apuesta aquí</span></div>
+    {/if}
     <div class="seats">
       {#each bj.seats as seat, si (seat.id)}
-        <div class="seat" class:mine={seat.id === net.pid} class:turn={bj.turn === seat.id}>
+        <div class="seat" class:mine={seat.id === net.pid} class:turn={bj.turn === seat.id} class:won={bj.phase === 'payout' && (seat.delta ?? 0) > 0}>
           <div class="hands">
             {#each seat.hands as h, hi (hi)}
               {@const t = handTotal(h.cards)}
@@ -194,6 +198,14 @@
 <style>
   .wrap { display: flex; flex-direction: column; gap: 10px; }
   .table { padding: 14px 10px 12px; display: flex; flex-direction: column; gap: 10px; min-height: 360px; }
+  .shoe { position: absolute; top: 14px; right: 16px; width: 34px; height: 46px; z-index: 0; }
+  .shoe i { position: absolute; inset: 0; border-radius: 5px; background: repeating-linear-gradient(45deg, rgb(var(--accent-rgb) / 0.4) 0 2px, transparent 2px 7px), linear-gradient(160deg, var(--back-1), var(--back-2)); border: 1.5px solid var(--gold-lo); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5); }
+  .shoe i:nth-child(1) { transform: translate(-4px, 4px); }
+  .shoe i:nth-child(2) { transform: translate(-2px, 2px); }
+  .spot { position: relative; z-index: 1; align-self: center; width: 92px; height: 92px; border-radius: 50%; border: 2px dashed var(--gold-lo); display: grid; place-items: center; text-align: center; font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); opacity: 0.7; animation: spot 1.8s ease-in-out infinite; }
+  .seat.won::after { content: ''; position: absolute; inset: -2px; border-radius: 16px; border: 2px solid var(--gold-hi); box-shadow: 0 0 16px 2px rgb(var(--accent-rgb) / 0.6); pointer-events: none; animation: winring 1.4s ease-out 2; }
+  @keyframes spot { 0%, 100% { opacity: 0.45; transform: scale(0.97); } 50% { opacity: 0.85; transform: scale(1.03); } }
+  @keyframes winring { 0% { opacity: 0; transform: scale(0.96); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.06); } }
   .deco { position: absolute; left: 0; right: 0; top: 150px; width: 100%; height: 70px; pointer-events: none; }
   .deco text { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 4px; fill: var(--gold); opacity: 0.32; }
   .dealer, .status, .seats { position: relative; z-index: 1; }
@@ -253,8 +265,9 @@
     font-weight: 800;
     letter-spacing: 0.04em;
     white-space: nowrap;
-    animation: fadeUp 0.3s ease both;
+    animation: pop 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) both;
   }
+  @keyframes pop { from { opacity: 0; transform: scale(0.4) translateY(8px); } to { opacity: 1; transform: none; } }
   .badge.win { background: var(--ok); color: #05260f; }
   .badge.lose { background: var(--danger); color: #fff; }
   .badge.push { background: #cdbf9d; color: #2b2210; }
