@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { Ludo, type LudoTiming } from './ludo';
 import { chooseMove } from './ludoAi';
-import type { Room } from './room';
+import { Player, Room as RealRoom, type Room } from './room';
 import { BOARDS, finalPos, safeCells, trackCell, type BoardSize, type LudoPublic } from '../shared/ludo';
 
 /** Reloj virtual: ejecuta los temporizadores al instante y en orden. */
@@ -303,6 +303,32 @@ test('"terminar al primero" acaba al ganar el primero y cierra la clasificación
   assert.deepEqual(p.seats.map((s) => s.rank).sort(), [1, 2, 3, 4]);
   assert.equal(rounds(), 1);
   assert.ok(feed.some((f) => /ganó el Ludo/.test(f)));
+});
+
+test('el casino está activo por defecto y CASINO=0 lo oculta', () => {
+  const make = () => {
+    const r = new RealRoom('ABCD', () => {});
+    const p = new Player('p-host', 'Ana', 0);
+    r.players.set(p.id, p);
+    r.hostId = p.id;
+    return { r, setGame: (g: string) => (r as unknown as { setGame(p: Player, g: string): string | void }).setGame(p, g) };
+  };
+  delete process.env.CASINO;
+  const on = make();
+  assert.equal(on.r.casino, true);
+  assert.equal(on.r.game, 'blackjack');
+  assert.equal(on.setGame('roulette'), undefined);
+  assert.deepEqual(on.r.casinoGames, ['blackjack', 'roulette', 'slots'], 'el póker está oculto por defecto');
+  assert.match(String(on.setGame('poker')), /no está disponible/);
+  process.env.CASINO = '0';
+  const off = make();
+  assert.equal(off.r.casino, false);
+  assert.equal(off.r.game, 'party', 'sin casino la mesa abre en Fiesta');
+  assert.match(String(off.setGame('blackjack')), /no está disponible/);
+  assert.equal(off.setGame('ludo'), undefined, 'Ludo y Fiesta siguen disponibles');
+  delete process.env.CASINO;
+  off.r.destroy();
+  on.r.destroy();
 });
 
 console.log(`Ludo: ${n} pruebas correctas`);

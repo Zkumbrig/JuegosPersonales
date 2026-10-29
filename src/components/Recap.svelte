@@ -16,9 +16,9 @@
   onMount(async () => {
     const room = net.room;
     if (!room) return;
-    if (computeAwards(room.stats, room.party.soft).length === 0) { status = 'empty'; return; }
+    if (computeAwards(room.stats, room.party.soft, room.casino).length === 0) { status = 'empty'; return; }
     try {
-      const canvas = await renderRecap(room.stats, room.party.soft, room.code);
+      const canvas = await renderRecap(room.stats, room.party.soft, room.code, room.casino);
       src = canvas.toDataURL('image/png');
       blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
       status = 'ready';

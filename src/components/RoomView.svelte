@@ -22,6 +22,7 @@
   const party = $derived(isPartyId(room.game));
   const ludo = $derived(room.game === 'ludo');
   const casino = $derived(!party && !ludo);
+  const casinoOn = $derived(room.casino);
   const broke = $derived(casino && (me?.chips ?? 1) < 10);
   let showTable = $state(false);
   let showRules = $state(false);
@@ -64,16 +65,16 @@
     </div>
   </header>
 
-  <div class="zones">
-    <button class="zone" class:on={casino} role="tab" aria-selected={casino} disabled={!isHost && !casino} onclick={() => zone('casino')}><Icon name="chip" size={18} /> Casino</button>
+  <div class="zones" style:--zn={casinoOn ? 3 : 2}>
+    {#if casinoOn}<button class="zone" class:on={casino} role="tab" aria-selected={casino} disabled={!isHost && !casino} onclick={() => zone('casino')}><Icon name="chip" size={18} /> Casino</button>{/if}
     <button class="zone" class:on={party} role="tab" aria-selected={party} disabled={!isHost && !party} onclick={() => zone('party')}><Icon name="party" size={18} /> Fiesta</button>
     <button class="zone" class:on={ludo} role="tab" aria-selected={ludo} disabled={!isHost && !ludo} onclick={() => zone('ludo')}><Icon name="ludo" size={18} /> Ludo</button>
     <button class="zone react" class:on={reactUi.open} onclick={() => (reactUi.open = !reactUi.open)} aria-label="Reacciones" aria-expanded={reactUi.open}><Icon name="sparkle" size={20} /></button>
   </div>
 
   {#if casino}
-    <nav class="tabs" aria-label="Juegos">
-      {#each GAMES as g (g.id)}
+    <nav class="tabs" aria-label="Juegos" style:--gn={room.casinoGames.length}>
+      {#each GAMES.filter((x) => room.casinoGames.includes(x.id)) as g (g.id)}
         <button class="tab" class:on={room.game === g.id} disabled={!isHost && room.game !== g.id} onclick={() => pick(g.id)}>
           {g.short}
         </button>
@@ -143,12 +144,12 @@
   .right { display: flex; gap: 5px; flex: none; }
   @media (max-width: 420px) { .lbl { display: none; } }
   .icon { color: var(--gold-hi); width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); font-size: 1.05rem; display: grid; place-items: center; background: rgba(255, 255, 255, 0.03); }
-  .zones { display: grid; grid-template-columns: 1fr 1fr 1fr 46px; gap: 6px; }
+  .zones { display: grid; grid-template-columns: repeat(var(--zn, 3), 1fr) 46px; gap: 6px; }
   .zone.react { padding: 0; }
   .zone { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--font-display); min-height: 40px; border-radius: 12px; border: 1px solid var(--line); font-size: 0.82rem; font-weight: 700; color: var(--muted); letter-spacing: 0.03em; }
   .zone.on { border-color: var(--gold); color: var(--gold-hi); background: rgb(var(--accent-rgb) / 0.12); }
   .zone:disabled:not(.on) { opacity: 0.45; }
-  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; border-radius: 999px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line); }
+  .tabs { display: grid; grid-template-columns: repeat(var(--gn, 4), 1fr); gap: 4px; padding: 4px; border-radius: 999px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--line); }
   .tab { min-height: 40px; border-radius: 999px; font-family: var(--font-display); font-size: 0.62rem; font-weight: 600; letter-spacing: 0.02em; color: var(--muted); transition: background 0.2s, color 0.2s; }
   .tab.on { background: var(--gold-grad); color: var(--on-accent); }
   .tab:disabled:not(.on) { opacity: 0.45; }

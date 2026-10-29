@@ -8,7 +8,7 @@ import { spin } from './slots';
 import { isPosInt } from './util';
 import { profiles } from './profiles';
 import {
-  ACHIEVEMENTS, GAMES, LUDO_GAME, MIN_REBUY_BELOW, PARTY_GAMES, REACTIONS, START_CHIPS, isPartyId,
+  ACHIEVEMENTS, GAMES, type CasinoGame, LUDO_GAME, MIN_REBUY_BELOW, PARTY_GAMES, REACTIONS, START_CHIPS, isPartyId,
   type ClientMsg, type FeedItem, type GameId, type PartyLevel, type ReactionKind, type RoomPublic, type RoomStats, type ServerMsg,
 } from '../shared/protocol';
 
@@ -49,7 +49,11 @@ export class Player {
 export class Room {
   players = new Map<string, Player>();
   hostId = '';
-  game: GameId = 'blackjack';
+  /** La zona Casino está activa salvo que el servidor arranque con CASINO=0 (para una versión de tienda de apps). */
+  readonly casino = process.env.CASINO !== '0';
+  /** Juegos de casino abiertos: los que se juegan contra la casa. El póker solo con POKER=1. */
+  readonly casinoGames: CasinoGame[] = !this.casino ? [] : GAMES.map((g) => g.id).filter((id) => id !== 'poker' || process.env.POKER === '1');
+  game: GameId = this.casino ? 'blackjack' : 'party';
   private feed: FeedItem[] = [];
   private feedSeq = 0;
   private spinning = new Set<string>();
@@ -140,6 +144,8 @@ export class Room {
       poker: this.po.toPublic(null),
       party: this.pa.toPublic(null),
       ludo: this.lu.toPublic(),
+      casino: this.casino,
+      casinoGames: this.casinoGames,
       locked: this.locked,
       stats: this.toStats(),
       feed: this.feed.slice(-6),
@@ -421,7 +427,8 @@ export class Room {
     }
     if (r.players.size === 0) throw new Error('mesa vacía');
     if (!r.players.has(r.hostId)) r.hostId = [...r.players.keys()][0];
-    r.game = s.game;
+    // Una mesa antigua con un juego que ya no está disponible vuelve al primero que sí lo está (o a Fiesta sin casino).
+    r.game = GAMES.some((g) => g.id === s.game) && !r.casinoGames.includes(s.game as CasinoGame) ? (r.casinoGames[0] ?? 'party') : s.game;
     if (Number.isFinite(s.startedAt)) r.startedAt = Number(s.startedAt);
     if (Number.isFinite(s.rounds)) r.rounds = Number(s.rounds);
     r.pa.restore(s.party);
@@ -444,6 +451,7 @@ export class Room {
     if (p.id !== this.hostId) return 'Solo el anfitrión cambia de juego.';
     const known = GAMES.some((g) => g.id === game) || PARTY_GAMES.some((g) => g.id === game) || game === 'party' || game === 'ludo';
     if (!known) return 'Juego no válido.';
+    if (GAMES.some((g) => g.id === game) && !this.casinoGames.includes(game as CasinoGame)) return 'Ese juego no está disponible.';
     if (game === this.game) return;
     if (!this.bj.idle() || !this.ro.idle() || !this.po.idle()) return 'Espera a que termine la ronda en curso.';
     if (!this.lu.idle()) return 'Hay una partida de Ludo en curso: termínala o cancélala antes de cambiar.';
@@ -457,6 +465,7 @@ export class Room {
   }
 
   private rebuy(p: Player): string | void {
+    if (!this.casino) return 'El casino está desactivado.';
     if (p.chips >= MIN_REBUY_BELOW) return 'Aún te quedan fichas.';
     p.chips = START_CHIPS;
     p.stats.rebuys++;

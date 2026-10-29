@@ -305,7 +305,7 @@
           <li class:off={!p.connected}>
             <Avatar id={p.id} size={44} />
             <span class="pn">{p.name}{#if p.host} <Icon name="kings" size={18} />{/if}</span>
-            <b class="num">{party ? `${pa?.tally[p.id] ?? 0} ${soft ? 'pts' : 'tragos'}` : fmt(p.chips)}</b>
+            <b class="num">{party ? `${pa?.tally[p.id] ?? 0} ${soft ? 'pts' : 'tragos'}` : room?.casino && game !== 'ludo' ? fmt(p.chips) : ''}</b>
           </li>
         {/each}
       </ul>

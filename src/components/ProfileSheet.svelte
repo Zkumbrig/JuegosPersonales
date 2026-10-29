@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { ACHIEVEMENTS } from '../../shared/protocol';
+  import { ACHIEVEMENTS, CASINO_ACHIEVEMENTS } from '../../shared/protocol';
   import { net } from '../lib/net.svelte';
   import { fmt } from '../lib/format';
   import Avatar from './Avatar.svelte';
@@ -15,6 +15,8 @@
 
   const p = $derived(net.profile);
   const got = $derived(new Set(p?.achievements ?? []));
+  const casino = $derived(!!net.room?.casino);
+  const shown = $derived(ACHIEVEMENTS.filter((a) => casino || !CASINO_ACHIEVEMENTS.includes(a.id)));
   const since = $derived(p ? new Date(p.firstSeen).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
   const stats = $derived(
     p
@@ -23,8 +25,7 @@
           { k: 'Rondas', v: fmt(p.rounds) },
           { k: 'Tragos', v: fmt(p.drinks) },
           { k: 'Mejor reflejo', v: p.bestReflex === null ? '—' : `${p.bestReflex} ms` },
-          { k: 'Mayor premio', v: p.bigWin > 0 ? `+${fmt(p.bigWin)}` : '—' },
-          { k: 'Faroles', v: fmt(p.bluffs) },
+          ...(casino ? [{ k: 'Mayor premio', v: p.bigWin > 0 ? `+${fmt(p.bigWin)}` : '—' }, { k: 'Faroles', v: fmt(p.bluffs) }] : []),
         ]
       : [],
   );
@@ -50,9 +51,9 @@
         {/each}
       </ul>
 
-      <h3>Logros <span class="count">{got.size}/{ACHIEVEMENTS.length}</span></h3>
+      <h3>Logros <span class="count">{shown.filter((a) => got.has(a.id)).length}/{shown.length}</span></h3>
       <ul class="ach">
-        {#each ACHIEVEMENTS as a (a.id)}
+        {#each shown as a (a.id)}
           <li class:on={got.has(a.id)}>
             <span class="medal"><Icon name={a.icon} size={22} /></span>
             <span class="txt"><b>{a.name}</b><small>{a.desc}</small></span>

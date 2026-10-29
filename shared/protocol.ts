@@ -200,6 +200,9 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { id: 'bluffer', name: 'Cara de póker', desc: 'Gana 3 botes sin enseñar cartas', icon: 'truth' },
   { id: 'borrower', name: 'Cliente del banco', desc: 'Pide 3 préstamos al banco', icon: 'minus' },
 ];
+/** Logros que solo se pueden ganar en el casino: se ocultan si la zona está desactivada. */
+export const CASINO_ACHIEVEMENTS = ['whale', 'bluffer', 'borrower'];
+
 export interface ProfilePublic {
   name: string;
   firstSeen: number;
@@ -229,6 +232,10 @@ export interface RoomPublic {
   poker: PokerPublic;
   party: PartyPublic;
   ludo: LudoPublic;
+  /** ¿Está activa la zona Casino? (activa por defecto; CASINO=0 en el servidor la oculta). */
+  casino: boolean;
+  /** Juegos de casino disponibles (el póker, que enfrenta a los jugadores entre sí, está oculto salvo POKER=1). */
+  casinoGames: CasinoGame[];
   locked: boolean; // el anfitrión cerró la mesa a nuevos jugadores
   stats: RoomStats;
   feed: FeedItem[];

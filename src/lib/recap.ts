@@ -5,7 +5,7 @@ import { fmt } from './format';
 export interface Award { key: string; icon: string; title: string; who: string; detail: string }
 
 /** Premios de la noche. Solo se reparten los que tienen datos reales (nadie recibe un premio por nada). */
-export function computeAwards(stats: RoomStats, soft: boolean): Award[] {
+export function computeAwards(stats: RoomStats, soft: boolean, casino = true): Award[] {
   const ps = stats.players;
   /** Mejor puntuación y todos los que la comparten (un empate se comparte, no se regala). */
   const top = (score: (p: PlayerStats) => number | null, higher = true) => {
@@ -29,6 +29,8 @@ export function computeAwards(stats: RoomStats, soft: boolean): Award[] {
 
   const reflex = top((p) => p.bestReflex, false);
   if (reflex) out.push({ key: 'reflex', icon: 'reflex', title: 'Dedos de rayo', who: names(reflex.who), detail: `${reflex.s} ms` });
+
+  if (!casino) return out; // sin casino no hay premios de fichas ni de faroles
 
   const lucky = top((p) => (p.bigWin > 0 ? p.bigWin : null));
   if (lucky) {
@@ -92,12 +94,12 @@ function fit(c: CanvasRenderingContext2D, text: string, maxW: number): string {
 }
 
 /** Dibuja la tarjeta de la noche con los colores del estilo activo. */
-export async function renderRecap(stats: RoomStats, soft: boolean, code: string): Promise<HTMLCanvasElement> {
+export async function renderRecap(stats: RoomStats, soft: boolean, code: string, casino = true): Promise<HTMLCanvasElement> {
   try {
     await Promise.all([document.fonts.load('900 100px Unbounded'), document.fonts.load('700 40px Unbounded'), document.fonts.load('500 30px Unbounded')]);
   } catch { /* sin fuente: se usa la de reserva */ }
 
-  const awards = computeAwards(stats, soft);
+  const awards = computeAwards(stats, soft, casino);
   const cs = getComputedStyle(document.documentElement);
   const v = (k: string) => cs.getPropertyValue(k).trim();
   const bg = v('--bg'), glow = v('--bg-glow'), gold = v('--gold'), goldHi = v('--gold-hi'), goldLo = v('--gold-lo');
