@@ -1,6 +1,7 @@
 // Pruebas de robustez: arranca servidores reales como procesos aparte y los maltrata.
 //   npm run test:robust
-process.env.POKER = '1'; // estas pruebas ejercitan el póker, que por defecto está oculto
+process.env.POKER = '1'; // estas pruebas ejercitan el póker y las tragaperras, que por defecto están ocultos
+process.env.SLOTS = '1';
 import assert from 'node:assert/strict';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createRequire } from 'node:module';

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
-  import { BOARDS, TURN_SECONDS_CHOICES, armColor, finalPos, targetOf, type BoardSize, type LudoOptions } from '../../../shared/ludo';
+  import { BOARDS, armColor, finalPos, targetOf, type BoardSize, type LudoOptions } from '../../../shared/ludo';
   import { net } from '../../lib/net.svelte';
   import { lv } from '../../lib/ludo/view.svelte';
   import { sfx } from '../../lib/sound.svelte';
@@ -28,7 +28,6 @@
   const humans = $derived(players.length);
   const maxBots = $derived(Math.max(0, opts.board - Math.min(humans, opts.board)));
   const outside = $derived(players.slice(opts.board));
-  const secondsLabel = (s: number) => (s === 0 ? 'Sin límite' : `${s} s`);
   const patch = (p: Partial<LudoOptions>) => net.send({ t: 'lu:config', patch: p });
 
   // ---------- Partida ----------
@@ -141,21 +140,6 @@
       {/if}
     </section>
 
-    <section class="panel box">
-      <h3>Reglas</h3>
-      <label class="sel">
-        <span><b>Tiempo por turno</b><small>Si no juegas a tiempo, el juego mueve por ti.</small></span>
-        <select disabled={!isHost} value={opts.turnSeconds} onchange={(e) => patch({ turnSeconds: Number(e.currentTarget.value) })}>
-          {#each TURN_SECONDS_CHOICES as s (s)}<option value={s}>{secondsLabel(s)}</option>{/each}
-        </select>
-      </label>
-      <ul class="fixed">
-        <li><b>Parejas protegidas</b><small>Dos peones del mismo color juntos no se pueden comer.</small></li>
-        <li><b>Meta con tiro justo</b><small>Avanzas lo que te toque sin pasarte y esperas el número exacto para entrar.</small></li>
-        <li><b>Seguimos hasta el último puesto</b><small>Cuando alguien llega a la meta se anuncia y los demás siguen jugando.</small></li>
-        <li><b>Un solo movimiento posible</b><small>Si solo puedes mover una ficha, el juego la mueve por ti.</small></li>
-      </ul>
-    </section>
 
     {#if isHost}
       <button class="btn btn-gold go" disabled={live.seats.length < 2} onclick={() => net.send({ t: 'lu:start' })}>
@@ -322,12 +306,6 @@
   .tg { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: rgb(var(--accent-rgb) / 0.15); color: var(--gold-hi); font-weight: 700; }
   .tg.warn { background: rgba(224, 86, 75, 0.2); color: #ffb3a8; }
   .warn { font-size: 0.82rem; color: #ffb3a8; }
-  .sel { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
-  .sel b { font-size: 0.9rem; }
-  .sel select { background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); border-radius: 10px; color: var(--text); min-height: 40px; padding: 0 10px; font: inherit; }
-  .fixed { display: grid; gap: 8px; }
-  .fixed li { display: grid; gap: 1px; padding-left: 10px; border-left: 3px solid var(--gold-lo); }
-  .fixed b { font-size: 0.88rem; }
   .go { min-height: 54px; font-size: 0.8rem; }
   .wait { padding: 14px; text-align: center; color: var(--muted); }
 

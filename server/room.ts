@@ -51,8 +51,8 @@ export class Room {
   hostId = '';
   /** La zona Casino está activa salvo que el servidor arranque con CASINO=0 (para una versión de tienda de apps). */
   readonly casino = process.env.CASINO !== '0';
-  /** Juegos de casino abiertos: los que se juegan contra la casa. El póker solo con POKER=1. */
-  readonly casinoGames: CasinoGame[] = !this.casino ? [] : GAMES.map((g) => g.id).filter((id) => id !== 'poker' || process.env.POKER === '1');
+  /** Juegos de casino abiertos. Ocultos por defecto: el póker (POKER=1) y las tragaperras (SLOTS=1). */
+  readonly casinoGames: CasinoGame[] = !this.casino ? [] : GAMES.map((g) => g.id).filter((id) => (id !== 'poker' || process.env.POKER === '1') && (id !== 'slots' || process.env.SLOTS === '1'));
   game: GameId = this.casino ? 'blackjack' : 'party';
   private feed: FeedItem[] = [];
   private feedSeq = 0;

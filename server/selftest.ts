@@ -9,7 +9,8 @@ import nodeFs from 'node:fs';
 nodeFs.rmSync(process.env.DATA_FILE, { force: true }); // cada autoprueba empieza limpia
 nodeFs.rmSync(process.env.DATA_FILE.replace(/\.json$/, '') + '.profiles.json', { force: true });
 
-process.env.POKER = '1'; // estas pruebas ejercitan el póker, que por defecto está oculto
+process.env.POKER = '1'; // estas pruebas ejercitan el póker y las tragaperras, que por defecto están ocultos
+process.env.SLOTS = '1';
 import assert from 'node:assert/strict';
 import { WebSocket } from 'ws';
 import { spin } from './slots';

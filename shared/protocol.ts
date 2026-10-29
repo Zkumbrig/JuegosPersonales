@@ -234,7 +234,7 @@ export interface RoomPublic {
   ludo: LudoPublic;
   /** ¿Está activa la zona Casino? (activa por defecto; CASINO=0 en el servidor la oculta). */
   casino: boolean;
-  /** Juegos de casino disponibles (el póker, que enfrenta a los jugadores entre sí, está oculto salvo POKER=1). */
+  /** Juegos de casino disponibles (póker y tragaperras están ocultos salvo POKER=1 / SLOTS=1). */
   casinoGames: CasinoGame[];
   locked: boolean; // el anfitrión cerró la mesa a nuevos jugadores
   stats: RoomStats;

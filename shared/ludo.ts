@@ -23,7 +23,7 @@ export interface LudoOptions {
   turnSeconds: number;
 }
 export const DEFAULT_LUDO_OPTIONS: LudoOptions = {
-  board: 4, bots: 0, endAtFirst: false, exactFinish: true, towers: true, autoSingle: true, turnSeconds: 45,
+  board: 4, bots: 0, endAtFirst: false, exactFinish: true, towers: true, autoSingle: true, turnSeconds: 30,
 };
 
 export interface LudoSeat {

@@ -1,28 +1,6 @@
 /* ---------- Temas ----------
    "gold" es el color de acento de cada tema (en Neón es cian, en Zafiro es plata). */
 :root,
-[data-theme='esmeralda'] {
-  --bg: #0a0807;
-  --bg-glow: #2a1d0c;
-  --panel: #1a1510;
-  --line: #3a2f1c;
-  --felt-hi: #14664d;
-  --felt: #0d4030;
-  --felt-dark: #072a1f;
-  --gold: #d9b45a;
-  --gold-hi: #f6e3a1;
-  --gold-lo: #8a6a22;
-  --accent-rgb: 217 180 90;
-  --on-accent: #2a1c05;
-  --foil: linear-gradient(115deg, #fff0b8 0%, #e6bc5a 26%, #f2b49a 50%, #c9a2e6 66%, #e8c76d 82%, #a67c1f 100%);
-  --back-1: #7b1a2b;
-  --back-2: #4a0d19;
-  --machine-1: #3a0f19;
-  --machine-2: #1e0710;
-  --text: #efe6d2;
-  --muted: #a89c82;
-  --theme-color: #0a0807;
-}
 [data-theme='neon'] {
   --bg: #07040f;
   --bg-glow: #2a0f55;
@@ -44,28 +22,6 @@
   --text: #eaf4ff;
   --muted: #9aa6c9;
   --theme-color: #07040f;
-}
-[data-theme='rubi'] {
-  --bg: #0b0506;
-  --bg-glow: #3a0a12;
-  --panel: #1c1012;
-  --line: #43232a;
-  --felt-hi: #a01b30;
-  --felt: #6b0f1f;
-  --felt-dark: #3d0812;
-  --gold: #d9b45a;
-  --gold-hi: #f6e3a1;
-  --gold-lo: #8a6a22;
-  --accent-rgb: 217 180 90;
-  --on-accent: #2a1c05;
-  --foil: linear-gradient(115deg, #fff0b8 0%, #e6bc5a 28%, #ff9d8a 52%, #e6bc5a 76%, #a67c1f 100%);
-  --back-1: #0f3d2c;
-  --back-2: #082a1e;
-  --machine-1: #123524;
-  --machine-2: #08190f;
-  --text: #f3e6e0;
-  --muted: #b39c97;
-  --theme-color: #0b0506;
 }
 [data-theme='zafiro'] {
   --bg: #05080f;
