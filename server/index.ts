@@ -1,3 +1,6 @@
+// Variables de entorno desde .env si existe (Node ≥ 20.12); en Render vienen del panel.
+try { process.loadEnvFile(); } catch { /* sin .env */ }
+
 import http, { type IncomingMessage } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';

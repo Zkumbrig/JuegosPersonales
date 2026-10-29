@@ -1,5 +1,6 @@
 import { rnd, shuffle } from './util';
 import type { Room, Player } from './room';
+import { aiContent, type AiKind } from './ai';
 import { DARES, KING_RULES, LIKELY, NEVER, TRUTHS, WOULD, type Item } from './content';
 import type { PartyGame, PartyLevel, PartyPublic, Suit } from '../shared/protocol';
 
@@ -160,15 +161,32 @@ export class Party {
     this.picks = null;
     this.drinkers = [];
     this.options = null;
-    if (g === 'never') this.prompt = this.draw('never', NEVER).text;
-    else if (g === 'likely') this.prompt = `¿Quién es más probable que ${this.draw('likely', LIKELY).text}`;
+    if (g === 'never') this.prompt = this.aiText('never') ?? this.draw('never', NEVER).text;
+    else if (g === 'likely') this.prompt = `¿Quién es más probable que ${this.aiText('likely') ?? this.draw('likely', LIKELY).text}`;
     else {
-      const i = this.pickPair();
+      const ai = this.aiPick('would');
       this.prompt = '¿Qué prefieres?';
-      this.options = [WOULD[i].a, WOULD[i].b];
+      if (Array.isArray(ai)) this.options = ai;
+      else {
+        const i = this.pickPair();
+        this.options = [WOULD[i].a, WOULD[i].b];
+      }
     }
     this.phase = 'asking';
     this.room.broadcast();
+  }
+
+  /**
+   * Frase nueva de la IA (si hay): sale en 7 de cada 10 cartas para que se mezcle con la lista curada.
+   * Si no hay clave, cuota o red, devuelve null y se usa la lista de siempre.
+   */
+  private aiPick(kind: AiKind) {
+    return Math.random() < 0.7 ? aiContent.take(kind, this.level) : null;
+  }
+
+  private aiText(kind: AiKind): string | null {
+    const a = this.aiPick(kind);
+    return typeof a === 'string' ? a : null;
   }
 
   private pickPair(): number {
@@ -254,7 +272,7 @@ export class Party {
     if (this.phase === 'choose') {
       if (value !== 'truth' && value !== 'dare') return 'Elige verdad o reto.';
       this.kind = value;
-      this.prompt = (value === 'truth' ? this.draw('truth', TRUTHS) : this.draw('dare', DARES)).text;
+      this.prompt = value === 'truth' ? (this.aiText('truth') ?? this.draw('truth', TRUTHS).text) : (this.aiText('dare') ?? this.draw('dare', DARES).text);
       this.phase = 'prompt';
       this.room.broadcast();
       return;
