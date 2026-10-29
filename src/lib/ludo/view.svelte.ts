@@ -34,6 +34,8 @@ class LudoView {
   /** Último peón movido: se dibuja un poco más grande. */
   lastMoved = $state.raw<string | null>(null);
   log = $state.raw<LogLine[]>([]);
+  /** Anuncio de que alguien llegó a la meta con sus 4 peones; se cierra y la partida sigue. */
+  announce = $state.raw<{ id: number; name: string; rank: number; color: string; mine: boolean } | null>(null);
 
   private lastSeq = 0;
   private queue: Entry[] = [];
@@ -59,6 +61,7 @@ class LudoView {
     this.bursts = [];
     this.lastMoved = null;
     this.ripples = [];
+    this.announce = null;
     this.dice = { id: this.dice.id, value: lu.turn?.dice ?? null, rolling: false, playerId: lu.turn?.playerId ?? null, show: false };
     if (lu.phase === 'setup') this.log = [];
     this.commit(lu, Date.now());
@@ -73,6 +76,10 @@ class LudoView {
     if (!events.length && !this.busy && !this.queue.length) return this.commit(lu, Date.now());
     this.queue.push({ pub: lu, events, at: Date.now() });
     void this.pump();
+  }
+
+  dismissAnnounce() {
+    this.announce = null;
   }
 
   reset() {
@@ -196,18 +203,20 @@ class LudoView {
         break;
       case 'finish':
         this.say(`${name} terminó en el puesto ${ev.rank}.`, actor, lu);
-        if (!fast && ev.rank !== 1) sfx.home();
+        if (!fast) {
+          const mine = actor?.id === net.pid;
+          const id = ++this.logSeq;
+          this.announce = { id, name: actor?.name ?? '…', rank: ev.rank, color: armColor(board, actor?.arm ?? 0).hex, mine };
+          setTimeout(() => { if (this.announce?.id === id) this.announce = null; }, 7000);
+          if (ev.rank === 1) { celebrate(mine); sfx.jackpot(); } else sfx.home();
+        }
         break;
       case 'leave':
         this.say(`${name} abandonó la partida.`, actor, lu);
         break;
       case 'end': {
         this.say('Fin de la partida.', null, lu);
-        const mine = lu.seats.find((s) => s.id === net.pid);
-        if (mine?.rank === 1 && !fast) {
-          celebrate(true);
-          sfx.jackpot();
-        } else if (!fast) sfx.win();
+        if (!fast) sfx.win();
         break;
       }
     }

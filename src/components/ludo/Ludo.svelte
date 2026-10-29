@@ -149,17 +149,12 @@
           {#each TURN_SECONDS_CHOICES as s (s)}<option value={s}>{secondsLabel(s)}</option>{/each}
         </select>
       </label>
-      {#each [
-        { k: 'endAtFirst', t: 'Termina con el primer ganador', h: 'Si no, se sigue hasta fijar todos los puestos.' },
-        { k: 'exactFinish', t: 'Tiro exacto para la meta', h: 'Para entrar a la meta hay que sacar el número justo.' },
-        { k: 'towers', t: 'Parejas protegidas', h: 'Dos peones del mismo color juntos no se pueden comer.' },
-        { k: 'autoSingle', t: 'Mover solo si hay una jugada', h: 'Te ahorra tocar cuando no hay nada que elegir.' },
-      ] as o (o.k)}
-        <label class="chk">
-          <input type="checkbox" checked={opts[o.k as 'endAtFirst']} disabled={!isHost} onchange={(e) => patch({ [o.k]: e.currentTarget.checked })} />
-          <span><b>{o.t}</b><small>{o.h}</small></span>
-        </label>
-      {/each}
+      <ul class="fixed">
+        <li><b>Parejas protegidas</b><small>Dos peones del mismo color juntos no se pueden comer.</small></li>
+        <li><b>Meta con tiro justo</b><small>Avanzas lo que te toque sin pasarte y esperas el número exacto para entrar.</small></li>
+        <li><b>Seguimos hasta el último puesto</b><small>Cuando alguien llega a la meta se anuncia y los demás siguen jugando.</small></li>
+        <li><b>Un solo movimiento posible</b><small>Si solo puedes mover una ficha, el juego la mueve por ti.</small></li>
+      </ul>
     </section>
 
     {#if isHost}
@@ -254,6 +249,18 @@
       {/if}
     </aside>
 
+    {#if lv.announce && !finished}
+      {@const an = lv.announce}
+      <div class="overlay light" role="dialog" aria-modal="true" aria-label="Llegó a la meta">
+        <div class="panel res an" style="--c:{an.color}">
+          <Icon name="trophy" size={44} />
+          <h2 class="display gold-text">{an.mine ? (an.rank === 1 ? '¡Ganaste!' : `¡Llegaste en ${an.rank}º lugar!`) : an.rank === 1 ? `¡${an.name} ganó!` : `¡${an.name} llegó en ${an.rank}º lugar!`}</h2>
+          <p class="muted">{an.rank === 1 ? 'La partida sigue para fijar los demás puestos.' : 'Seguimos hasta el último puesto.'}</p>
+          <button class="btn btn-gold" onclick={() => lv.dismissAnnounce()}>Seguir jugando</button>
+        </div>
+      </div>
+    {/if}
+
     {#if finished && showResults}
       <div class="overlay" role="dialog" aria-modal="true" aria-label="Resultados">
         <div class="panel res">
@@ -315,11 +322,12 @@
   .tg { font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: rgb(var(--accent-rgb) / 0.15); color: var(--gold-hi); font-weight: 700; }
   .tg.warn { background: rgba(224, 86, 75, 0.2); color: #ffb3a8; }
   .warn { font-size: 0.82rem; color: #ffb3a8; }
-  .chk, .sel { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
-  .chk { justify-content: flex-start; }
-  .chk b, .sel b { font-size: 0.9rem; }
-  .chk input { width: 22px; height: 22px; accent-color: var(--gold); flex: none; }
+  .sel { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+  .sel b { font-size: 0.9rem; }
   .sel select { background: rgba(0, 0, 0, 0.35); border: 1px solid var(--line); border-radius: 10px; color: var(--text); min-height: 40px; padding: 0 10px; font: inherit; }
+  .fixed { display: grid; gap: 8px; }
+  .fixed li { display: grid; gap: 1px; padding-left: 10px; border-left: 3px solid var(--gold-lo); }
+  .fixed b { font-size: 0.88rem; }
   .go { min-height: 54px; font-size: 0.8rem; }
   .wait { padding: 14px; text-align: center; color: var(--muted); }
 
@@ -371,6 +379,8 @@
   .again { justify-self: center; }
 
   .overlay { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; background: rgba(4, 3, 2, 0.78); animation: fadeUp 0.25s ease both; }
+  .overlay.light { background: rgba(4, 3, 2, 0.55); }
+  .res.an { border-color: var(--c); }
   .res { width: min(100%, 420px); padding: 20px; display: grid; gap: 12px; justify-items: center; text-align: center; color: var(--gold-hi); }
   .res h2 { font-size: 1.3rem; }
   .res ol { width: 100%; display: grid; gap: 6px; }

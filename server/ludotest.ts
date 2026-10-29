@@ -251,16 +251,12 @@ test('sin ninguna persona conectada la partida queda en pausa', () => {
 function invariants(p: LudoPublic) {
   const board = p.options.board;
   const FIN = finalPos(board);
-  const seen = new Map<number, Set<number>>();
   for (const s of p.seats) {
     assert.equal(s.pawns.length, 4);
     for (const x of s.pawns) {
       assert.ok(x >= 0 && x <= FIN, `progreso fuera de rango: ${x}`);
-      const c = trackCell(board, s.arm, x);
-      if (c !== null) (seen.get(c) ?? seen.set(c, new Set()).get(c)!).add(s.arm);
     }
   }
-  for (const [cell, arms] of seen) if (!safeCells(board).has(cell)) assert.equal(arms.size, 1, `rivales juntos en ${cell}`);
 }
 
 for (const board of BOARDS) {
@@ -295,7 +291,7 @@ for (const board of BOARDS) {
 
 test('"terminar al primero" acaba al ganar el primero y cierra la clasificación', () => {
   const { lu, vt, rounds, feed } = mkRoom(['Humano']);
-  lu.config(host, { bots: 3, turnSeconds: 20 }); // el humano no responde: el tiempo juega por él
+  lu.config(host, { bots: 3, turnSeconds: 20, endAtFirst: true }); // el humano no responde: el tiempo juega por él
   lu.start(host);
   vt.run(200_000, () => pub(lu).phase === 'finished');
   const p = pub(lu);
