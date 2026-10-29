@@ -4,6 +4,7 @@ import { Roulette } from './roulette';
 import { Poker } from './poker';
 import { Party } from './party';
 import { Ludo } from './ludo';
+import { FreePoker } from './freepoker';
 import { spin } from './slots';
 import { isPosInt } from './util';
 import { profiles } from './profiles';
@@ -74,6 +75,7 @@ export class Room {
   readonly po = new Poker(this);
   readonly pa = new Party(this);
   readonly lu = new Ludo(this);
+  readonly fp = new FreePoker(this);
 
   constructor(public code: string, private onDestroy: (code: string) => void) {}
 
@@ -104,6 +106,7 @@ export class Room {
     this.bj.onRemove(p.id);
     this.ro.onRemove(p.id);
     this.po.onRemove(p.id);
+    this.fp.onRemove(p.id);
     this.players.delete(p.id);
     this.lu.onRemove(p.id);
     if (this.players.size === 0) { this.destroy(); return; }
@@ -123,6 +126,7 @@ export class Room {
     this.po.dispose();
     this.pa.dispose();
     this.lu.dispose();
+    this.fp.dispose();
     this.onDestroy(this.code);
   }
 
@@ -145,6 +149,7 @@ export class Room {
       poker: this.po.toPublic(null),
       party: this.pa.toPublic(null),
       ludo: this.lu.toPublic(),
+      freepoker: this.fp.toPublic(null),
       casino: this.casino,
       casinoGames: this.casinoGames,
       locked: this.locked,
@@ -192,7 +197,7 @@ export class Room {
     const base = this.toPublic();
     // Salvo en el póker y la fiesta (cartas y respuestas privadas), todos reciben el mismo
     // estado: se serializa una sola vez.
-    const personal = this.game === 'poker' || isPartyId(this.game);
+    const personal = this.game === 'poker' || this.game === 'freepoker' || isPartyId(this.game);
     const shared = personal ? null : JSON.stringify({ t: 'state', room: base } satisfies ServerMsg);
     for (const p of this.players.values()) {
       if (p.ws?.readyState !== 1) continue;
@@ -200,7 +205,7 @@ export class Room {
         shared ??
           JSON.stringify({
             t: 'state',
-            room: { ...base, poker: this.po.toPublic(p.id), party: this.pa.toPublic(p.id) },
+            room: { ...base, poker: this.po.toPublic(p.id), freepoker: this.fp.toPublic(p.id), party: this.pa.toPublic(p.id) },
           } satisfies ServerMsg),
       );
     }
@@ -248,6 +253,10 @@ export class Room {
       case 'profile:get': return this.send(p, { t: 'profile', profile: profiles.publicOf(p.id) });
       case 'room:kick': return this.kick(p, String(m.pid));
       case 'room:lock': return this.setLocked(p, !!m.locked);
+      case 'fp:sit': return this.onlyIn('freepoker') ?? this.fp.sit(p);
+      case 'fp:stand': return this.onlyIn('freepoker') ?? this.fp.stand(p);
+      case 'fp:ready': return this.onlyIn('freepoker') ?? this.fp.ready(p);
+      case 'fp:choose': return this.onlyIn('freepoker') ?? this.fp.choose(p, !!m.stay);
       case 'lu:config': return this.onlyIn('ludo') ?? this.lu.config(p, m.patch ?? {});
       case 'lu:start': return this.onlyIn('ludo') ?? this.lu.start(p);
       case 'lu:roll': return this.onlyIn('ludo') ?? this.lu.roll(p);
@@ -466,8 +475,10 @@ export class Room {
     if (GAMES.some((g) => g.id === game) && !this.casinoGames.includes(game as CasinoGame)) return 'Ese juego no está disponible.';
     if (game === this.game) return;
     if (!this.bj.idle() || !this.ro.idle() || !this.po.idle()) return 'Espera a que termine la ronda en curso.';
+    if (!this.fp.idle()) return 'Espera a que termine la mano de póker.';
     if (!this.lu.idle()) return 'Hay una partida de Ludo en curso: termínala o cancélala antes de cambiar.';
     if (this.game === 'poker') this.po.cashOutAll(); // todos recuperan sus fichas de la mesa
+    if (this.game === 'freepoker') this.fp.reset(); // la mesa de póker se vacía al cambiar de juego
     if (this.game === 'ludo') this.lu.back(); // el Ludo vuelve a su preparación
     this.game = game;
     this.pa.reset(); // cada juego de fiesta empieza desde cero (se conserva el marcador)

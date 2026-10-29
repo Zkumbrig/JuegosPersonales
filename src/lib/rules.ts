@@ -44,8 +44,23 @@ export const RULES: Record<GameId, Rules> = {
       'El premio se suma cuando los rodillos se paran. A la larga devuelve alrededor del 96 % de lo apostado.',
     ],
   },
-  poker: {
+  freepoker: {
     title: 'Póker', icon: 'poker',
+    lead: "Texas Hold'em sin apostar: gana la mejor mano.",
+    points: [
+      'Siéntate a la mesa y pulsa Repartir. La mano empieza cuando todos los sentados están listos (o a los 10 s del segundo listo).',
+      'Recibes 2 cartas privadas. En la mesa salen 5 cartas comunitarias por fases: flop (3), turn (1) y river (1).',
+      'Antes de cada fase decides Seguir o Retirarte. Tienes 20 s; si no contestas, sigues.',
+      'Tu mano es la mejor combinación de 5 cartas entre tus 2 y las de la mesa. Al final gana la mejor mano entre quienes siguen; si todos se retiran menos uno, gana ese.',
+      'No hay fichas ni apuestas: se lleva un marcador de victorias de la noche.',
+    ],
+    ranking: {
+      title: 'Manos, de mayor a menor',
+      items: ['Escalera de color', 'Póker (cuatro iguales)', 'Full (trío y pareja)', 'Color (cinco del mismo palo)', 'Escalera', 'Trío', 'Doble pareja', 'Pareja', 'Carta alta'],
+    },
+  },
+  poker: {
+    title: 'Póker con fichas', icon: 'poker',
     lead: "Texas Hold'em sin límite. Ciegas de 10 y 20.",
     points: [
       'Te sientas con 200, 500 o 1000 fichas de tu cartera. Al levantarte, las que te queden vuelven a ella.',

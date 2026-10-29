@@ -314,7 +314,7 @@ test('el casino está activo por defecto y CASINO=0 lo oculta', () => {
   assert.equal(on.r.casino, true);
   assert.equal(on.r.game, 'blackjack');
   assert.equal(on.setGame('roulette'), undefined);
-  assert.deepEqual(on.r.casinoGames, ['blackjack', 'roulette'], 'póker y tragaperras están ocultos por defecto');
+  assert.deepEqual(on.r.casinoGames, ['blackjack', 'roulette', 'freepoker'], 'el póker con fichas y las tragaperras están ocultos por defecto');
   assert.match(String(on.setGame('poker')), /no está disponible/);
   process.env.CASINO = '0';
   const off = make();

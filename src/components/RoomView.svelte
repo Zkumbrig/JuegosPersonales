@@ -8,6 +8,7 @@
   import Roulette from './Roulette.svelte';
   import Slots from './Slots.svelte';
   import Poker from './Poker.svelte';
+  import FreePoker from './FreePoker.svelte';
   import PartyHub from './PartyHub.svelte';
   import Ludo from './ludo/Ludo.svelte';
   import Party from './Party.svelte';
@@ -101,6 +102,7 @@
       {#if room.game === 'blackjack'}<Blackjack />
       {:else if room.game === 'roulette'}<Roulette />
       {:else if room.game === 'poker'}<Poker />
+      {:else if room.game === 'freepoker'}<FreePoker />
       {:else if room.game === 'ludo'}<Ludo />
       {:else if room.game === 'party'}<PartyHub />
       {:else if party}<Party />

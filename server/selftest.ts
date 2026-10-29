@@ -666,6 +666,59 @@ console.log(`Tragaperras OK: ${a.slot!.reels.join(' ')} → ${a.slot!.win}`);
   console.log('Ludo OK');
 }
 
+// ---------- Póker sin apuestas por WebSocket ----------
+{
+  const f = () => a.room.freepoker;
+  a.send({ t: 'game', game: 'freepoker' });
+  await until(() => a.room.game === 'freepoker' && b.room.game === 'freepoker', 'cambio a póker sin apuestas', 10_000);
+  a.send({ t: 'fp:ready' });
+  await until(() => a.errors.length > 0, 'hay que sentarse antes de repartir').catch(() => {});
+  a.send({ t: 'fp:sit' });
+  b.send({ t: 'fp:sit' });
+  await until(() => f().seats.length === 2 && b.room.freepoker.seats.length === 2, 'dos sentados');
+  a.send({ t: 'fp:ready' });
+  b.send({ t: 'fp:ready' });
+  await until(() => f().phase === 'preflop' && b.room.freepoker.phase === 'preflop', 'empieza la mano', 5_000);
+
+  // Privacidad: cada uno ve sus 2 cartas y las del otro boca abajo
+  const mine = (c: Client) => c.room.freepoker.seats.find((x) => x.id === c.pid)!.cards;
+  const theirs = (c: Client, other: Client) => c.room.freepoker.seats.find((x) => x.id === other.pid)!.cards;
+  assert.equal(mine(a).length, 2);
+  assert.ok(mine(a).every((c) => !('hidden' in c)), 'veo mis cartas');
+  assert.ok(theirs(a, b).every((c) => 'hidden' in c), 'las del otro están ocultas');
+  assert.equal(f().board.length, 0);
+
+  // Las tres fases siguen con "Seguir"; el flop, turn y river suman 3, 4 y 5 cartas
+  for (const [phase, cards] of [['flop', 3], ['turn', 4], ['river', 5]] as const) {
+    a.send({ t: 'fp:choose', stay: true });
+    b.send({ t: 'fp:choose', stay: true });
+    await until(() => f().phase === phase && b.room.freepoker.phase === phase, 'fase ' + phase, 5_000);
+    assert.equal(f().board.length, cards);
+  }
+  a.send({ t: 'fp:choose', stay: true });
+  b.send({ t: 'fp:choose', stay: true });
+  await until(() => f().phase === 'showdown', 'showdown', 5_000);
+  assert.ok(theirs(a, b).every((c) => !('hidden' in c)), 'en el showdown se destapan');
+  assert.ok(f().winners.length >= 1 && f().seats.every((x) => x.hand), 'hay ganador y nombre de mano');
+  const totalWins = f().seats.reduce((n, x) => n + x.wins, 0);
+  assert.ok(totalWins >= 1 && totalWins <= 2, 'marcador de victorias');
+
+  // Segunda mano: si uno se retira, gana el otro sin enseñar cartas
+  await until(() => f().phase === 'waiting', 'vuelve a la espera', 12_000);
+  a.send({ t: 'fp:ready' });
+  b.send({ t: 'fp:ready' });
+  await until(() => f().phase === 'preflop', 'segunda mano', 5_000);
+  b.send({ t: 'fp:choose', stay: false });
+  await until(() => f().phase === 'showdown', 'gana por retirada', 5_000);
+  assert.deepEqual(f().winners, [a.pid]);
+  assert.ok(f().note, 'avisa de que los demás se retiraron');
+  assert.ok(theirs(a, b).length === 0, 'el retirado no enseña cartas');
+  await until(() => f().phase === 'waiting', 'otra vez a la espera', 8_000);
+  a.send({ t: 'game', game: 'blackjack' });
+  await until(() => a.room.game === 'blackjack' && b.room.game === 'blackjack', 'salir del póker', 10_000);
+  console.log('Póker sin apuestas OK');
+}
+
 // Reconexión con el mismo pid conserva fichas
 const chipsBeforeReconnect = a.me().chips;
 const a2 = new Client(a.pid, a.name);

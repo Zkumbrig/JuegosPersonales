@@ -9,7 +9,7 @@ export const CHIP_VALUES = [10, 50, 100, 500, 1000] as const;
 import type { LudoOptions, LudoPublic } from './ludo';
 export * from './ludo';
 
-export type CasinoGame = 'blackjack' | 'roulette' | 'slots' | 'poker';
+export type CasinoGame = 'blackjack' | 'roulette' | 'slots' | 'poker' | 'freepoker';
 export type PartyGame = 'never' | 'likely' | 'would' | 'truth' | 'reflex' | 'kings';
 /** 'party' es el menú de la zona Fiesta; 'ludo' es la zona Ludo (4, 6 u 8 jugadores). */
 export type GameId = CasinoGame | PartyGame | 'party' | 'ludo';
@@ -18,7 +18,8 @@ export const GAMES: { id: CasinoGame; name: string; short: string; tagline: stri
   { id: 'blackjack', name: 'Blackjack', short: 'Blackjack', tagline: 'Mesa compartida · 21' },
   { id: 'roulette', name: 'Ruleta', short: 'Ruleta', tagline: 'Europea · un solo cero' },
   { id: 'slots', name: 'Tragaperras', short: 'Slots', tagline: 'Gira tu suerte' },
-  { id: 'poker', name: 'Póker', short: 'Póker', tagline: "Texas Hold'em · sin límite" },
+  { id: 'poker', name: 'Póker con fichas', short: 'Fichas', tagline: "Texas Hold'em · sin límite" },
+  { id: 'freepoker', name: 'Póker', short: 'Póker', tagline: 'Texas · gana la mejor mano, sin apostar' },
 ];
 
 /** icon = nombre en src/lib/icons.ts */
@@ -141,6 +142,29 @@ export interface PokerPublic {
   timeLeft: number | null;
 }
 
+// ---------- Póker sin apuestas ----------
+export interface FreePokerSeat {
+  id: string;
+  ready: boolean;
+  inHand: boolean;
+  folded: boolean;
+  /** Ya eligió "Seguir" o "Retirarme" en esta fase. */
+  decided: boolean;
+  cards: Card[]; // las ajenas llegan ocultas hasta el showdown
+  hand?: string; // nombre de la mano en el showdown
+  won?: boolean;
+  wins: number; // victorias de la noche
+}
+export interface FreePokerPublic {
+  phase: 'waiting' | 'preflop' | 'flop' | 'turn' | 'river' | 'showdown';
+  seats: FreePokerSeat[];
+  board: Card[];
+  timeLeft: number | null;
+  winners: string[];
+  note: string | null;
+  hands: number;
+}
+
 // ---------- Fiesta ----------
 export type PartyLevel = 1 | 2 | 3;
 export const LEVELS: { id: PartyLevel; name: string; flames: 1 | 2 | 3; hint: string }[] = [
@@ -232,6 +256,7 @@ export interface RoomPublic {
   poker: PokerPublic;
   party: PartyPublic;
   ludo: LudoPublic;
+  freepoker: FreePokerPublic;
   /** ¿Está activa la zona Casino? (activa por defecto; CASINO=0 en el servidor la oculta). */
   casino: boolean;
   /** Juegos de casino disponibles (póker y tragaperras están ocultos salvo POKER=1 / SLOTS=1). */
@@ -265,6 +290,10 @@ export type ClientMsg =
   | { t: 'po:stand' }
   | { t: 'po:ready' }
   | { t: 'po:act'; action: 'fold' | 'check' | 'call' | 'raise'; amount?: number }
+  | { t: 'fp:sit' }
+  | { t: 'fp:stand' }
+  | { t: 'fp:ready' }
+  | { t: 'fp:choose'; stay: boolean }
   | { t: 'lu:config'; patch: Partial<LudoOptions> }
   | { t: 'lu:start' }
   | { t: 'lu:roll' }
