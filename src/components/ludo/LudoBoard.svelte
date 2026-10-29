@@ -20,12 +20,14 @@
     targets?: { pawn: number; p: number }[];
     popped?: string[];
     bursts?: Burst[];
+    ripples?: Burst[];
+    shake?: boolean;
     mini?: boolean;
     onpick?: (pawn: number) => void;
   };
   let {
     board, seats = [], shown = {}, turnId = null, meId = null, movable = [], canPick = false, targets = [],
-    popped = [], bursts = [], mini = false, onpick,
+    popped = [], bursts = [], ripples = [], shake = false, mini = false, onpick,
   }: Props = $props();
 
   const uid = $props.id();
@@ -127,7 +129,7 @@
   });
 </script>
 
-<div class="table" class:mini aria-label={`Tablero de Ludo para ${board} jugadores`} role={mini ? 'img' : 'group'}>
+<div class="table" class:mini class:shake aria-label={`Tablero de Ludo para ${board} jugadores`} role={mini ? 'img' : 'group'}>
   <div class="felt">
     <svg viewBox="{-E} {-E} {2 * E} {2 * E}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -278,6 +280,12 @@
           />
         {/each}
 
+        <!-- Ondas al caer cada peón -->
+        {#each ripples as r (r.id)}
+          {@const rp = R(r)}
+          <circle class="ripple" class:big={r.big} cx={rp.x} cy={rp.y} r="0.3" style:stroke={r.color} />
+        {/each}
+
         <!-- Chispas de capturas y llegadas -->
         {#each bursts as b (b.id)}
           {@const bp = R(b)}
@@ -353,12 +361,17 @@
   .spark { transform-box: fill-box; transform-origin: center; animation: spark 0.8s cubic-bezier(0.1, 0.7, 0.3, 1) forwards; }
   .shock { fill: none; stroke-width: 0.12; transform-box: fill-box; transform-origin: center; animation: shock 0.7s ease-out forwards; }
   .burst { pointer-events: none; }
+  .ripple { fill: none; stroke-width: 0.1; pointer-events: none; transform-box: fill-box; transform-origin: center; animation: ripple 0.6s ease-out forwards; }
+  .ripple.big { stroke-width: 0.16; animation-duration: 0.8s; }
+  .table.shake { animation: shake 0.5s cubic-bezier(0.3, 0.1, 0.3, 1); }
+  @keyframes ripple { 0% { transform: scale(0.5); opacity: 0.9; } 100% { transform: scale(2.6); opacity: 0; } }
+  @keyframes shake { 0%, 100% { transform: translate(0, 0); } 15% { transform: translate(-1.4%, 0.6%) rotate(-0.4deg); } 35% { transform: translate(1.2%, -0.8%) rotate(0.4deg); } 55% { transform: translate(-0.8%, 0.5%); } 75% { transform: translate(0.5%, -0.3%); } }
   @keyframes turn { 0%, 100% { opacity: 0.25; transform: scale(0.97); } 50% { opacity: 1; transform: scale(1.04); } }
   @keyframes tgt { 0%, 100% { transform: scale(0.94); } 50% { transform: scale(1.07); } }
   @keyframes spark { 0% { transform: translate(0, 0) scale(1); opacity: 1; } 100% { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; } }
   @keyframes shock { 0% { transform: scale(0.4); opacity: 0.9; } 100% { transform: scale(2.8); opacity: 0; } }
   @media (prefers-reduced-motion: reduce) {
-    .turnring, .target, .spark, .shock { animation: none; }
+    .turnring, .target, .spark, .shock, .ripple, .table.shake { animation: none; }
     .spark, .shock { opacity: 0; }
   }
 </style>

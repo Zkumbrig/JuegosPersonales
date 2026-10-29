@@ -158,6 +158,35 @@ test('comer manda el peón a casa y da otra tirada', () => {
   assert.equal(turn(lu).playerId, mineId);
 });
 
+test('dado justo: con todos los peones en casa nunca se esperan más de 5 tiradas por un 6', () => {
+  const { lu, vt } = mkRoom(['A', 'B']);
+  lu.config(host, { turnSeconds: 0 });
+  lu.start(host);
+  let worst = 0;
+  let run = 0;
+  let seen = 0;
+  for (let i = 0; i < 4000; i++) {
+    const t = pub(lu).turn!;
+    if (t.step === 'roll') lu.roll({ id: t.playerId });
+    const e = pub(lu).events.filter((x) => x.seq > seen && x.type === 'roll' && x.playerId === 'p0');
+    for (const r of e) {
+      if (r.type !== 'roll') continue;
+      const inYard = inner(lu).seats.find((s) => s.id === 'p0')!.pawns.every((p) => p === 0);
+      run = r.dice === 6 || !inYard ? 0 : run + 1;
+      worst = Math.max(worst, run);
+    }
+    seen = pub(lu).seq;
+    const cur = pub(lu).turn;
+    if (cur?.step === 'move') {
+      const s = inner(lu);
+      lu.move({ id: cur.playerId }, chooseMove(4, pub(lu).options, s.seats, s.turn.seat, s.turn.dice, cur.movable));
+    }
+    vt.run(5);
+    if (pub(lu).phase !== 'playing') break;
+  }
+  assert.ok(worst <= 5, 'la peor racha sin 6 fue ' + worst);
+});
+
 test('el tiempo agotado juega por la persona y a la segunda pasa a automático', () => {
   const { lu, vt } = mkRoom(['A', 'B']);
   lu.config(host, { turnSeconds: 20 });

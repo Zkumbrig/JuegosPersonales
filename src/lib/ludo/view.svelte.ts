@@ -11,7 +11,7 @@ import { geometry, type Pt } from './geometry';
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 interface Entry { pub: LudoPublic; events: LudoEvent[]; at: number }
-export interface Burst { id: number; x: number; y: number; color: string }
+export interface Burst { id: number; x: number; y: number; color: string; big?: boolean }
 export interface LogLine { id: number; text: string; color: string | null }
 
 class LudoView {
@@ -22,7 +22,11 @@ class LudoView {
   /** Progreso que se dibuja de cada peón (cambia paso a paso en las animaciones). */
   shown = $state.raw<Record<string, number[]>>({});
   /** El dado: `id` cambia en cada tirada para repetir su animación. */
-  dice = $state.raw<{ id: number; value: number | null; rolling: boolean; playerId: string | null }>({ id: 0, value: null, rolling: false, playerId: null });
+  dice = $state.raw<{ id: number; value: number | null; rolling: boolean; playerId: string | null; show: boolean }>({ id: 0, value: null, rolling: false, playerId: null, show: false });
+  /** Ondas al caer cada peón en su casilla. */
+  ripples = $state.raw<Burst[]>([]);
+  /** El tablero se sacude un instante cuando hay una captura. */
+  shake = $state(false);
   /** Peones recién comidos ("playerId:pawn"). */
   popped = $state.raw<string[]>([]);
   /** Estallidos de partículas (en coordenadas del tablero sin girar). */
@@ -54,7 +58,8 @@ class LudoView {
     this.popped = [];
     this.bursts = [];
     this.lastMoved = null;
-    this.dice = { id: this.dice.id, value: lu.turn?.dice ?? null, rolling: false, playerId: lu.turn?.playerId ?? null };
+    this.ripples = [];
+    this.dice = { id: this.dice.id, value: lu.turn?.dice ?? null, rolling: false, playerId: lu.turn?.playerId ?? null, show: false };
     if (lu.phase === 'setup') this.log = [];
     this.commit(lu, Date.now());
   }
@@ -133,11 +138,16 @@ class LudoView {
         this.say(`Empieza la partida. Abre ${name}.`, actor, lu);
         break;
       case 'roll':
-        this.dice = { id: this.dice.id + 1, value: ev.dice, rolling: true, playerId: ev.playerId };
+        this.dice = { id: this.dice.id + 1, value: ev.dice, rolling: true, playerId: ev.playerId, show: !fast };
         if (!fast) sfx.dice();
-        await wait(1050);
+        await wait(1100);
         if (epoch !== this.epoch) return;
         this.dice = { ...this.dice, rolling: false };
+        if (!fast && ev.dice === 6) sfx.yours();
+        {
+          const id = this.dice.id;
+          setTimeout(() => { if (this.dice.id === id) this.dice = { ...this.dice, show: false }; }, ev.dice === 6 ? 1300 : 800);
+        }
         this.say(`${name} ${name === 'Tú' ? 'sacaste' : 'sacó'} un ${ev.dice}.`, actor, lu);
         await wait(150);
         break;
@@ -154,7 +164,8 @@ class LudoView {
             if (epoch !== this.epoch) return;
             this.setShown(ev.playerId, ev.pawn, p);
             if (!fast) sfx.hop();
-            await wait(190);
+            this.ripple(geometry(board).pawnPoint(actor?.arm ?? 0, p, ev.pawn), armColor(board, actor?.arm ?? 0).hex, p === ev.to);
+            await wait(250);
           }
           const home = ev.to === finalPos(board);
           this.say(home ? `${name} metió un peón en la meta.` : `${name} avanza ${ev.to - ev.from}.`, actor, lu);
@@ -168,6 +179,7 @@ class LudoView {
           if (!fast) sfx.thud();
           if (!fast) navigator.vibrate?.(40);
           this.popped = ev.captured.map((c) => `${c.playerId}:${c.pawn}`);
+          if (!fast) { this.shake = true; setTimeout(() => (this.shake = false), 520); }
           for (const c of ev.captured) {
             const victim = seat(c.playerId);
             if (victim) this.burst(geometry(board).pawnPoint(victim.arm, c.from, c.pawn), armColor(board, victim.arm).hex);
@@ -199,6 +211,14 @@ class LudoView {
         break;
       }
     }
+  }
+
+  private ripple(pt: Pt, color: string, big: boolean) {
+    const id = ++this.burstSeq;
+    setTimeout(() => {
+      this.ripples = [...this.ripples, { id, x: pt.x, y: pt.y, color, big }];
+      setTimeout(() => (this.ripples = this.ripples.filter((b) => b.id !== id)), 700);
+    }, 170);
   }
 
   private burst(pt: Pt, color: string) {

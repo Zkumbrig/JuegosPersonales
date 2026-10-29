@@ -37,7 +37,8 @@
   class="pawn"
   class:movable
   style:transform="translate({x}px, {y}px)"
-  style:transition-duration={p === 0 ? '480ms' : '190ms'}
+  style:transition-duration={p === 0 ? '520ms' : '250ms'}
+  style:transition-timing-function={p === 0 ? 'cubic-bezier(0.3, 0.7, 0.3, 1)' : 'linear'}
   style:--c={color}
   role={movable ? 'button' : undefined}
   tabindex={movable ? 0 : undefined}
@@ -54,10 +55,10 @@
     <circle class="ring2" r="0.66" cy="0.02" />
     <circle r="0.7" cy="0.02" fill="transparent" />
   {/if}
+  <ellipse class="gshadow" cx="0" cy="0.38" rx="0.36" ry="0.12" fill="rgba(0,0,0,.4)" />
   {#key p}
     <g class="hop" class:go={flags.ready && p !== 0} class:fly={flags.ready && p === 0} class:hit={popped}>
       <g transform="scale({scale})">
-        <ellipse cx="0" cy="0.38" rx="0.36" ry="0.12" fill="rgba(0,0,0,.38)" />
         <ellipse cx="0" cy="0.31" rx="0.33" ry="0.14" fill="url(#pw-{uid}-{arm})" stroke="rgba(0,0,0,.45)" stroke-width="0.04" />
         <path
           d="M -0.25 0.3 C -0.25 0.04 -0.12 -0.02 -0.1 -0.12 L 0.1 -0.12 C 0.12 -0.02 0.25 0.04 0.25 0.3 Z"
@@ -77,12 +78,13 @@
 <style>
   .pawn {
     transition-property: transform;
-    transition-timing-function: cubic-bezier(0.3, 0.7, 0.3, 1);
     outline: none;
   }
   .movable { cursor: pointer; }
   .hop { transform-box: fill-box; transform-origin: 50% 100%; }
-  .hop.go { animation: hop 190ms ease-out; }
+  .hop.go { animation: hop 250ms cubic-bezier(0.3, 0.1, 0.5, 1); }
+  .gshadow { animation: none; }
+  .pawn:has(.hop.go) .gshadow { animation: shad 250ms ease-in-out; transform-box: fill-box; transform-origin: center; }
   .hop.fly { animation: fly 480ms cubic-bezier(0.3, 0.1, 0.3, 1); }
   .hop.hit { animation: hit 560ms ease-in-out; }
   .ring {
@@ -102,10 +104,13 @@
   .movable:hover .ring, .movable:focus-visible .ring { stroke: #fff; }
   @keyframes hop {
     0% { transform: translateY(0) scale(1, 1); }
-    40% { transform: translateY(-0.55px) scale(0.92, 1.12); }
-    78% { transform: translateY(0) scale(1.1, 0.86); }
+    12% { transform: translateY(0) scale(1.12, 0.84); }
+    45% { transform: translateY(-0.85px) scale(0.9, 1.14); }
+    82% { transform: translateY(0) scale(1.14, 0.82); }
+    92% { transform: translateY(0) scale(0.96, 1.05); }
     100% { transform: translateY(0) scale(1, 1); }
   }
+  @keyframes shad { 0%, 100% { transform: scale(1); opacity: 1; } 45% { transform: scale(0.65); opacity: 0.5; } }
   @keyframes fly {
     0% { transform: translateY(0) scale(1) rotate(0); }
     45% { transform: translateY(-1.6px) scale(1.15) rotate(220deg); }

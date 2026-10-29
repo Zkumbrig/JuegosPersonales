@@ -47,6 +47,8 @@
       turnId={finished || live.phase === 'setup' ? null : (turn?.playerId ?? null)}
       popped={lv.popped}
       bursts={lv.bursts}
+      ripples={lv.ripples}
+      shake={lv.shake}
     />
   </div>
   <div class="info">

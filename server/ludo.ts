@@ -18,6 +18,8 @@ export const LUDO_TIMING: LudoTiming = { act: 1100, single: 800, pass: 1500, gra
 export type Scheduler = (ms: number, fn: () => void) => () => void;
 
 interface Seat extends LudoSeat {
+  /** Tiradas seguidas sin 6 teniendo todos los peones en casa (para el dado justo). */
+  drought: number;
   strikes: number;
   /** Cuándo perdió la conexión (null si está conectada). */
   dcAt: number | null;
@@ -66,13 +68,13 @@ export class Ludo {
   private readonly timing: LudoTiming;
   private readonly schedule: Scheduler;
   private readonly now: () => number;
-  private readonly rollDie: () => number;
+  private readonly rollDie: (() => number) | undefined;
 
   constructor(private room: Room, hooks: LudoHooks = {}) {
     this.timing = hooks.timing ?? (process.env.LUDO_FAST === '1' ? { act: 0, single: 0, pass: 0, grace: 0 } : LUDO_TIMING);
     this.schedule = hooks.schedule ?? ((ms, fn) => { const h = setTimeout(fn, ms); return () => clearTimeout(h); });
     this.now = hooks.now ?? Date.now;
-    this.rollDie = hooks.dice ?? debugDice() ?? (() => randomInt(1, 7));
+    this.rollDie = hooks.dice ?? debugDice();
   }
 
   /** Se puede cambiar de juego (no hay una partida en curso). */
@@ -137,7 +139,7 @@ export class Ludo {
     if (this.room.players.size > this.options.board) return 'No caben todos: elige un tablero mayor.';
     const preview = this.previewSeats();
     if (preview.length < 2) return 'Hacen falta al menos 2 jugadores. Añade un bot.';
-    this.seats = preview.map((s) => ({ ...s, strikes: 0, dcAt: null }));
+    this.seats = preview.map((s) => ({ ...s, drought: 0, strikes: 0, dcAt: null }));
     this.order = this.seats.map((_, i) => i).sort((a, b) => this.seats[a]!.arm - this.seats[b]!.arm);
     this.ranked = 0;
     this.phase = 'playing';
@@ -195,7 +197,7 @@ export class Ludo {
   private doRoll() {
     const t = this.turn!;
     const s = this.seats[t.seat]!;
-    const dice = this.rollDie();
+    const dice = this.rollDie ? this.rollDie() : this.fairRoll(s);
     t.dice = dice;
     t.sixes = dice === 6 ? t.sixes + 1 : 0;
     this.emit({ type: 'roll', playerId: s.id, dice });
@@ -216,6 +218,26 @@ export class Ludo {
     }
     this.room.broadcast();
     this.plan();
+  }
+
+  /**
+   * Dado justo: es aleatorio, pero quien tiene todos los peones en casa y lleva varias tiradas sin 6
+   * ve crecer su probabilidad (1/6 → +20 % por intento fallido), de modo que como mucho espera 5 tiradas.
+   * Con peones ya en juego el dado es 100 % normal.
+   */
+  private fairRoll(s: Seat): number {
+    const stuck = s.pawns.every((p) => p === 0);
+    if (!stuck) {
+      s.drought = 0;
+      return randomInt(1, 7);
+    }
+    const chance = Math.min(1, 1 / 6 + s.drought * 0.2);
+    if (randomInt(10_000) < chance * 10_000) {
+      s.drought = 0;
+      return 6;
+    }
+    s.drought++;
+    return randomInt(1, 6); // 1..5
   }
 
   private doMove(pawn: number) {

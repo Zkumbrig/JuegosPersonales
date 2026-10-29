@@ -188,8 +188,15 @@
         {targets}
         popped={lv.popped}
         bursts={lv.bursts}
+        ripples={lv.ripples}
+        shake={lv.shake}
         onpick={pick}
       />
+      </div>
+      <!-- El dado se lanza sobre el tablero y luego se queda en la tarjeta de turno -->
+      <div class="tossed" class:on={lv.dice.show} class:ta={lv.dice.id % 2 === 0} class:tb={lv.dice.id % 2 === 1} aria-hidden="true">
+        <LudoDie value={lv.dice.value} rollId={lv.dice.id} rolling={lv.dice.rolling} color={diceColor} size={104} />
+        {#if lv.dice.show && !lv.dice.rolling && lv.dice.value === 6}<span class="six6 display">¡Seis!</span>{/if}
       </div>
       {#if board >= 6 && iSit}
         <button class="zbtn" class:on={zoom} onclick={() => (zoom = !zoom)} aria-pressed={zoom} aria-label={zoom ? 'Ver todo el tablero' : 'Acercar a mi lado'}><Icon name="zoom" size={20} /></button>
@@ -320,6 +327,14 @@
   .play { display: grid; gap: 10px; animation: fadeUp 0.3s ease both; }
   .watch { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); font-size: 0.82rem; color: var(--muted); }
   .stage { position: relative; width: 100%; max-width: min(100%, 78dvh); margin: 0 auto; }
+  .tossed { position: absolute; left: 50%; top: 50%; margin: -65px 0 0 -65px; z-index: 3; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0.25s; }
+  .tossed.on { opacity: 1; visibility: visible; }
+  .tossed.on.ta { animation: throw-a 1.1s cubic-bezier(0.25, 0.7, 0.3, 1); }
+  .tossed.on.tb { animation: throw-b 1.1s cubic-bezier(0.25, 0.7, 0.3, 1); }
+  .six6 { position: absolute; left: 50%; bottom: -14px; translate: -50% 0; font-size: 1.1rem; color: var(--gold-hi); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8); white-space: nowrap; animation: pop6 0.5s cubic-bezier(0.2, 1.6, 0.4, 1); }
+  @keyframes throw-a { 0% { transform: translate(-110%, 90%) scale(0.45); } 55% { transform: translate(8%, -12%) scale(1.12); } 75% { transform: translate(0, 4%) scale(0.96); } 100% { transform: translate(0, 0) scale(1); } }
+  @keyframes throw-b { 0% { transform: translate(110%, 90%) scale(0.45); } 55% { transform: translate(-8%, -12%) scale(1.12); } 75% { transform: translate(0, 4%) scale(0.96); } 100% { transform: translate(0, 0) scale(1); } }
+  @keyframes pop6 { from { transform: scale(0.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
   .zoomer { width: 100%; aspect-ratio: 1; }
   .zoomer.zoom { overflow: hidden; border-radius: 26px; }
   .zoomer :global(.table) { transition: transform 0.45s cubic-bezier(0.3, 0.7, 0.2, 1); transform-origin: 50% 88%; }
