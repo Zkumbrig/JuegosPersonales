@@ -8,9 +8,9 @@ import { DARES, LIKELY, NEVER, TRUTHS, WOULD } from './content';
 export type AiKind = 'never' | 'likely' | 'would' | 'truth' | 'dare';
 type Level = 1 | 2 | 3;
 
-const BATCH = 25;
-const LOW_WATER = 8; // al bajar de aquí se pide otro lote
-const MAX_POOL = 80;
+const BATCH = 50;
+const LOW_WATER = 12; // al bajar de aquí se pide otro lote
+const MAX_POOL = 120;
 const COOLDOWN_MS = 5 * 60_000;
 const COOLDOWN_QUOTA_MS = 20 * 60_000;
 
@@ -212,7 +212,7 @@ export class AiContent {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY! },
       body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig }),
-      signal: AbortSignal.timeout(90_000),
+      signal: AbortSignal.timeout(150_000),
     });
     if (!res.ok) throw new Error(`Gemini respondió ${res.status}`);
     const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
