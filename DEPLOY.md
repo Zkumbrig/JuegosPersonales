@@ -64,3 +64,17 @@ Pon delante Caddy o Nginx con HTTPS y reenvío de WebSockets a `localhost:3001`.
 - [ ] Apagar la pantalla de un celular 10 segundos y comprobar que vuelve a la mesa.
 - [ ] Compartir la imagen del resumen de la noche desde un celular.
 - [ ] Instalar la app desde el navegador (icono de instalar / "Añadir a pantalla de inicio").
+
+## Reseñas privadas (valoraciones)
+
+Los jugadores pueden valorar el juego (1 a 5 estrellas y un comentario) desde la hoja de la mesa o los resultados de Ludo.
+Son **privadas**: solo las ves tú.
+
+1. Crea un Postgres gratuito (Supabase o Neon) y copia su **URL de conexión**.
+2. En Render, en *Environment* del servicio, añade `DATABASE_URL` (esa URL) y `ADMIN_KEY` (una clave larga que inventes, mínimo 12 caracteres).
+3. Al arrancar, el servidor crea solo la tabla `reviews` (id, created_at, pid, name, game, rating 1-5, comment, room_code, theme).
+4. Lee las reseñas en `https://TU-APP.onrender.com/admin/reviews?key=TU_CLAVE` (promedio por juego y lista; añade `&format=json` para los datos crudos).
+   Sin `ADMIN_KEY` la ruta no existe. Con `DATABASE_SSL=0` se desactiva TLS (solo para un Postgres local).
+
+Sin `DATABASE_URL` las reseñas se guardan en un archivo local, solo útil para desarrollo: en Render gratis se perderían al dormirse.
+Cada persona puede valorar cada juego una vez cada 12 horas.

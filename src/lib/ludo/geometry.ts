@@ -112,7 +112,7 @@ function build(board: BoardSize): Geometry {
   let extent = 0;
   for (const c of track) extent = Math.max(extent, Math.hypot(c.x, c.y) + 0.75);
   for (const y of yards) extent = Math.max(extent, Math.hypot(y.center.x, y.center.y) + y.radius + 0.25);
-  extent = Math.ceil((extent + 0.35) * 2) / 2;
+  extent = Math.ceil((extent + 0.35) * 2) / 2 + (board === 8 ? 1.2 : 0.9); // margen: las tarjetas de los jugadores asoman por fuera de los patios
 
   const FIN = finalPos(N);
   const pawnPoint = (arm: number, p: number, slot: number): Pt => {

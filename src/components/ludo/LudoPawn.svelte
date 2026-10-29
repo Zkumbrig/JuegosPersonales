@@ -34,7 +34,7 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <g
-  class="pawn"
+  class="pawn essential-motion"
   class:movable
   style:transform="translate({x}px, {y}px)"
   style:transition-duration={p === 0 ? '520ms' : '250ms'}
@@ -129,6 +129,6 @@
     50% { transform: scale(1.12); opacity: 1; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .ring, .hop.go, .hop.fly, .hop.hit { animation: none; }
+    .ring { animation: none; }
   }
 </style>

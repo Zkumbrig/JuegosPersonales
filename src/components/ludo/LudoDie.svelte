@@ -1,6 +1,7 @@
 <script lang="ts">
-  // Dado 3D de verdad: un cubo de seis caras que rueda y cae sobre la cara que sacó el servidor.
-  // Solo se anima transform (compositor), nada de sombras ni filtros en movimiento.
+  // Dado 3D de verdad: un cubo de seis caras que da vueltas y cae sobre la cara que sacó el servidor.
+  // El cubo siempre está colocado en su cara final; el giro es una animación aparte que termina en esa
+  // posición (así se ve rodar aunque cambie el valor). Solo transform: corre en la GPU.
   type Props = {
     value: number | null;
     /** Cambia en cada tirada para repetir la animación. */
@@ -28,35 +29,19 @@
     { n: 5, t: 'rotateX(-90deg)' },
   ];
 
-  let rx = $state(-18);
-  let ry = $state(24);
-  let animate = $state(false);
-  let seen = -1;
-
-  $effect(() => {
-    const id = rollId;
-    const v = value ?? 1;
-    const [bx, by] = FACE[v] ?? FACE[1]!;
-    if (seen === -1 || id === seen) {
-      // Primera pintura (o mismo dado): se coloca sin girar.
-      animate = false;
-      rx = bx - 14;
-      ry = by + 18;
-    } else {
-      animate = true;
-      const spins = 2 + (id % 2);
-      rx = Math.ceil(rx / 360) * 360 + 360 * spins + bx - 14;
-      ry = Math.ceil(ry / 360) * 360 + 360 * (spins + 1) + by + 18;
-    }
-    seen = id;
+  const pose = $derived.by(() => {
+    const [bx, by] = FACE[value ?? 1] ?? FACE[1]!;
+    return `rotateX(${bx - 14}deg) rotateY(${by + 18}deg)`;
   });
+  const par = $derived(rollId % 2 === 0 ? 'a' : 'b');
 </script>
 
-<div class="wrap" class:active style:--s="{size}px" style:--ring={color}>
+<div class="wrap essential-motion" class:active style:--s="{size}px" style:--ring={color}>
   <span class="halo" aria-hidden="true"></span>
   <button class="stage" disabled={!active} onclick={onroll} aria-label={active ? 'Tirar el dado' : value ? `Dado: ${value}` : 'Dado'}>
-    <span class="toss" class:ga={animate && rolling && rollId % 2 === 0} class:gb={animate && rolling && rollId % 2 === 1}>
-        <span class="cube" style:transform="rotateX({rx}deg) rotateY({ry}deg)" style:transition={animate ? 'transform 1.05s cubic-bezier(.18,.72,.22,1)' : 'none'}>
+    <span class="toss" class:ta={rolling && par === 'a'} class:tb={rolling && par === 'b'}>
+      <span class="spin" class:sa={rolling && par === 'a'} class:sb={rolling && par === 'b'}>
+        <span class="cube" style:transform={pose}>
           {#each FACES as f (f.n)}
             <span class="face" style:transform="{f.t} translateZ(calc(var(--s) / 2))">
               {#each [0, 1, 2, 3, 4, 5, 6, 7, 8] as i (i)}
@@ -65,10 +50,11 @@
             </span>
           {/each}
         </span>
+      </span>
     </span>
   </button>
   {#if active && !rolling}<span class="cta display">Tirar</span>{/if}
-  <span class="shadow" aria-hidden="true"></span>
+  <span class="shadow" class:rolling aria-hidden="true"></span>
 </div>
 
 <style>
@@ -93,15 +79,17 @@
     z-index: 2;
   }
   .active .stage { cursor: pointer; }
-  .toss {
+  .toss, .spin {
     display: block;
     width: var(--s);
     height: var(--s);
     transform-style: preserve-3d;
   }
-  .toss.ga { animation: toss-a 1.05s cubic-bezier(.3, .1, .3, 1); }
-  .toss.gb { animation: toss-b 1.05s cubic-bezier(.3, .1, .3, 1); }
-  .active:not(:has(.ga, .gb)) .toss { animation: bob 1.4s ease-in-out infinite; }
+  .toss.ta { animation: toss-a 1.05s cubic-bezier(.3, .1, .3, 1); }
+  .toss.tb { animation: toss-b 1.05s cubic-bezier(.3, .1, .3, 1); }
+  .spin.sa { animation: spin-a 1.05s cubic-bezier(.2, .75, .25, 1); }
+  .spin.sb { animation: spin-b 1.05s cubic-bezier(.2, .75, .25, 1); }
+  .active:not(:has(.ta, .tb)) .toss { animation: bob 1.4s ease-in-out infinite; }
   .cube {
     position: relative;
     display: block;
@@ -151,6 +139,7 @@
     background: rgba(0, 0, 0, 0.5);
     z-index: 1;
   }
+  .shadow.rolling { animation: shadow 1.05s ease-in-out; }
   .cta {
     position: absolute;
     bottom: -6px;
@@ -168,6 +157,7 @@
     white-space: nowrap;
     pointer-events: none;
   }
+  /* Rebote del dado sobre la mesa (sube, cae, rebota, se asienta). */
   @keyframes toss-a {
     0% { transform: translateY(0) scale(1); }
     22% { transform: translateY(-46%) scale(1.14) rotateZ(8deg); }
@@ -184,9 +174,14 @@
     80% { transform: translateY(0) scale(0.99); }
     100% { transform: translateY(0) scale(1); }
   }
+  /* Giro: varias vueltas sobre los tres ejes que terminan exactamente en la cara sacada. */
+  @keyframes spin-a { from { transform: rotateX(900deg) rotateY(-720deg) rotateZ(180deg); } to { transform: rotateX(0) rotateY(0) rotateZ(0); } }
+  @keyframes spin-b { from { transform: rotateX(-720deg) rotateY(900deg) rotateZ(-180deg); } to { transform: rotateX(0) rotateY(0) rotateZ(0); } }
+  @keyframes shadow { 0%, 100% { transform: scale(1); opacity: 1; } 22% { transform: scale(0.55); opacity: 0.4; } 46% { transform: scale(1.05); } 62% { transform: scale(0.8); opacity: 0.7; } }
   @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7%); } }
   @keyframes halo { 0%, 100% { opacity: 0.35; transform: scale(0.94); } 50% { opacity: 0.9; transform: scale(1.08); } }
   @media (prefers-reduced-motion: reduce) {
-    .toss.ga, .toss.gb, .active .toss, .active .halo { animation: none !important; }
+    /* Solo se apagan los vaivenes decorativos; el giro del dado es parte del juego. */
+    .active .toss, .active .halo { animation: none !important; }
   }
 </style>

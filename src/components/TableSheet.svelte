@@ -3,6 +3,7 @@
   import { net } from '../lib/net.svelte';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
+  import { reviewUi } from '../lib/review.svelte';
 
   let { onclose, onrecap, onprofile }: { onclose: () => void; onrecap: () => void; onprofile: () => void } = $props();
 
@@ -103,6 +104,7 @@
       <button class="btn btn-ghost" onclick={onprofile}><Icon name="user" size={16} /> Mi perfil</button>
       <button class="btn btn-ghost" onclick={onrecap}><Icon name="trophy" size={16} /> Resumen</button>
     </div>
+    <button class="btn btn-ghost" onclick={() => { reviewUi.open = true; onclose(); }}><Icon name="sparkle" size={16} /> Valorar el juego</button>
     <button class="btn btn-ghost" onclick={() => (showTv = !showTv)} aria-expanded={showTv}><Icon name="tv" size={16} /> Pantalla grande (TV)</button>
     {#if showTv}
       <div class="tvinfo">

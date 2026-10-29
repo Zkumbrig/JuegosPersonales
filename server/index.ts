@@ -9,6 +9,8 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { Player, Room } from './room';
 import { loadRooms, saveRooms } from './persist';
 import { profiles } from './profiles';
+import { renderAdmin, reviews } from './reviews';
+import { timingSafeEqual } from 'node:crypto';
 import { makeCode, rnd } from './util';
 import { MAX_PLAYERS, type ClientMsg, type ServerMsg } from '../shared/protocol';
 
@@ -43,10 +45,42 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
 };
 
+// ---------- Reseñas privadas: solo con ADMIN_KEY ----------
+const adminFails = new Map<string, { n: number; since: number }>();
+function adminKeyOk(given: string): boolean {
+  const key = process.env.ADMIN_KEY ?? '';
+  if (key.length < 12 || !given) return false; // sin clave larga configurada, la ruta no existe
+  const a = Buffer.from(given);
+  const b = Buffer.from(key);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+async function adminReviews(req: IncomingMessage, url: URL, res: http.ServerResponse) {
+  const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex', 'Referrer-Policy': 'no-referrer' };
+  if ((process.env.ADMIN_KEY ?? '').length < 12) { res.writeHead(404, headers).end(); return; }
+  const ip = TRUST_PROXY ? String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() || (req.socket.remoteAddress ?? '?') : (req.socket.remoteAddress ?? '?');
+  const f = adminFails.get(ip);
+  if (f && Date.now() - f.since < 10 * 60_000 && f.n >= 8) { res.writeHead(429, headers).end('Demasiados intentos'); return; }
+  const given = url.searchParams.get('key') ?? String(req.headers['x-admin-key'] ?? '');
+  if (!adminKeyOk(given)) {
+    const cur = f && Date.now() - f.since < 10 * 60_000 ? f : { n: 0, since: Date.now() };
+    cur.n++;
+    adminFails.set(ip, cur);
+    res.writeHead(404, headers).end();
+    return;
+  }
+  const list = await reviews.list(500);
+  if (url.searchParams.get('format') === 'json') {
+    res.writeHead(200, { ...headers, 'Content-Type': 'application/json; charset=utf-8' }).end(JSON.stringify({ mode: reviews.mode, reviews: list }));
+  } else {
+    res.writeHead(200, { ...headers, 'Content-Type': 'text/html; charset=utf-8' }).end(renderAdmin(list, reviews.mode));
+  }
+}
+
 // ---------- HTTP estático (producción) ----------
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', 'http://x');
+    if (url.pathname === '/admin/reviews') return void (await adminReviews(req, url, res));
     if (url.pathname === '/healthz') { res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok'); return; } // para el monitor de la plataforma
     let file = path.join(DIST, decodeURIComponent(url.pathname));
     if (!file.startsWith(DIST)) { res.writeHead(403).end(); return; }
@@ -72,6 +106,7 @@ const rooms = new Map<string, Room>();
 for (const r of loadRooms(DATA_FILE, (c) => rooms.delete(c))) rooms.set(r.code, r);
 if (rooms.size) console.log(`Recuperadas ${rooms.size} mesa(s) de la última copia`);
 profiles.init(DATA_FILE.replace(/\.json$/, '') + '.profiles.json');
+await reviews.init(DATA_FILE.replace(/\.json$/, '') + '.reviews.json');
 const persistTimer = setInterval(() => { saveRooms(DATA_FILE, rooms.values()); profiles.save(); }, PERSIST_MS);
 persistTimer.unref();
 

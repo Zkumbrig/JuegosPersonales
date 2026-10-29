@@ -8,11 +8,12 @@
     "build": "vite build",
     "start": "tsx server/index.ts",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "tsx server/selftest.ts && tsx server/robusttest.ts && tsx server/ludotest.ts && tsx server/aitest.ts",
+    "test": "tsx server/selftest.ts && tsx server/robusttest.ts && tsx server/ludotest.ts && tsx server/aitest.ts && tsx server/reviewstest.ts",
     "icons": "node scripts/make-icons.mjs",
     "test:robust": "tsx server/robusttest.ts"
   },
   "dependencies": {
+    "pg": "^8.23.1",
     "qrcode-generator": "^2.0.4",
     "tsx": "^4.23.15",
     "ws": "^8.22.0"
@@ -20,6 +21,7 @@
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
     "@types/ws": "^8.18.2",
     "concurrently": "^10.0.6",
     "sharp": "^0.35.5",

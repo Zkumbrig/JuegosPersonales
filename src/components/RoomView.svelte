@@ -12,6 +12,8 @@
   import Ludo from './ludo/Ludo.svelte';
   import Party from './Party.svelte';
   import TableSheet from './TableSheet.svelte';
+  import ReviewSheet from './ReviewSheet.svelte';
+  import { reviewUi } from '../lib/review.svelte';
   import Reactions from './Reactions.svelte';
   import { ui as reactUi } from '../lib/reactions.svelte';
 
@@ -116,6 +118,7 @@
   {#if showRecap}
     {#await import('./Recap.svelte') then m}<m.default onclose={() => (showRecap = false)} />{:catch}{@render stale(() => (showRecap = false))}{/await}
   {/if}
+  {#if reviewUi.open}<ReviewSheet onclose={() => (reviewUi.open = false)} />{/if}
   <Reactions />
 
   {#if lastFeed}

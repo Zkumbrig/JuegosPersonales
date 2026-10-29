@@ -49,6 +49,7 @@
       bursts={lv.bursts}
       ripples={lv.ripples}
       shake={lv.shake}
+      labels
     />
   </div>
   <div class="info">

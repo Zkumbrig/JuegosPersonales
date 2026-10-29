@@ -7,6 +7,7 @@ import { Ludo } from './ludo';
 import { spin } from './slots';
 import { isPosInt } from './util';
 import { profiles } from './profiles';
+import { cleanComment, reviews } from './reviews';
 import {
   ACHIEVEMENTS, GAMES, type CasinoGame, LUDO_GAME, MIN_REBUY_BELOW, PARTY_GAMES, REACTIONS, START_CHIPS, isPartyId,
   type ClientMsg, type FeedItem, type GameId, type PartyLevel, type ReactionKind, type RoomPublic, type RoomStats, type ServerMsg,
@@ -243,6 +244,7 @@ export class Room {
       case 'po:ready': return this.onlyIn('poker') ?? this.po.ready(p);
       case 'po:act': return this.onlyIn('poker') ?? this.po.act(p.id, m.action, m.amount);
       case 'react': return this.react(p, m.kind);
+      case 'review': return this.review(p, m.rating, m.comment);
       case 'profile:get': return this.send(p, { t: 'profile', profile: profiles.publicOf(p.id) });
       case 'room:kick': return this.kick(p, String(m.pid));
       case 'room:lock': return this.setLocked(p, !!m.locked);
@@ -258,6 +260,16 @@ export class Room {
       case 'pa:answer': return this.inParty() ?? this.pa.answer(p, String(m.value));
       case 'pa:tap': return this.inParty() ?? this.pa.tap(p, Number(m.ms));
     }
+  }
+
+  /** Valoración privada del juego actual: va a la base de datos y solo la ve el dueño. */
+  private review(p: Player, rating: unknown, comment: unknown): string | void {
+    const r = Number(rating);
+    if (!Number.isInteger(r) || r < 1 || r > 5) return 'La valoración va de 1 a 5 estrellas.';
+    const game = isPartyId(this.game) ? 'party' : this.game; // los seis juegos de fiesta cuentan como una sola zona
+    void reviews
+      .add({ pid: p.id, name: p.name, game, rating: r, comment: cleanComment(comment), roomCode: this.code, theme: null })
+      .then((err) => this.send(p, err ? { t: 'err', msg: err } : { t: 'review:ok' }));
   }
 
   private onlyIn(game: GameId): string | void {

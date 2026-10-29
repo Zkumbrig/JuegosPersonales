@@ -22,12 +22,16 @@
     bursts?: Burst[];
     ripples?: Burst[];
     shake?: boolean;
+    /** Placas con el nombre y el avance de cada jugador junto a su patio. */
+    labels?: boolean;
+    /** Ids de jugadores sin conexión. */
+    offline?: string[];
     mini?: boolean;
     onpick?: (pawn: number) => void;
   };
   let {
     board, seats = [], shown = {}, turnId = null, meId = null, movable = [], canPick = false, targets = [],
-    popped = [], bursts = [], ripples = [], shake = false, mini = false, onpick,
+    popped = [], bursts = [], ripples = [], shake = false, labels = false, offline = [], mini = false, onpick,
   }: Props = $props();
 
   const uid = $props.id();
@@ -107,6 +111,39 @@
       });
     }
     return items;
+  });
+
+  // Tarjetas de los jugadores: tangentes al exterior de su patio (hacia el borde) para no pisar casillas.
+  // El tamaño se ajusta al tablero: con más brazos hay menos hueco y los nombres se acortan.
+  const PLATE = { 4: { chars: 8, font: 0.46 }, 6: { chars: 6, font: 0.44 }, 8: { chars: 5, font: 0.42 } } as const;
+  /** Acerca la tarjeta al centro hasta que sus esquinas caigan dentro del tablero redondo. */
+  const inside = (x: number, y: number, ux: number, uy: number, w: number, h: number) => {
+    const lim = E - 0.3;
+    const far = (px: number, py: number) => Math.max(...[[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([a, b]) => Math.hypot(px + a! * w / 2, py + b! * h / 2)));
+    for (let i = 0; i < 40 && far(x, y) > lim; i++) { x -= ux * 0.05; y -= uy * 0.05; }
+    return { x, y };
+  };
+  const plates = $derived.by(() => {
+    if (!labels || mini) return [];
+    const cfg = PLATE[board];
+    return live.map((s) => {
+      const y = yards[s.arm]!;
+      const full = s.id === meId ? 'Tú' : s.name;
+      const name = [...full].length > cfg.chars ? `${[...full].slice(0, cfg.chars - 1).join('')}…` : full;
+      const w = 0.95 + [...name].length * cfg.font * 0.64 + 0.3;
+      const h = 1.1;
+      const d = Math.hypot(y.c.x, y.c.y) || 1;
+      const ux = y.c.x / d;
+      const uy = y.c.y / d;
+      const half = Math.abs(ux) * (w / 2) + Math.abs(uy) * (h / 2);
+      const prog = shown[s.id] ?? s.pawns;
+      return {
+        id: s.id, arm: s.arm, name, w, h, font: cfg.font, initial: s.name.slice(0, 1).toUpperCase(),
+        pips: prog.map((p) => (zoneOf(board, p) === 'done' ? 2 : p > 0 ? 1 : 0)),
+        rank: s.rank, left: s.left, auto: s.auto, off: offline.includes(s.id),
+        ...inside(y.c.x + ux * (y.r + 0.25 + half), y.c.y + uy * (y.r + 0.25 + half), ux, uy, w, h),
+      };
+    });
   });
 
   let hovered = $state<number | null>(null);
@@ -261,6 +298,24 @@
           <circle class="target" class:hot={hovered === t.pawn} cx={t.end.x} cy={t.end.y} r="0.52" style:stroke={t.color} />
         {/each}
 
+        <!-- Participantes: tarjeta con avatar, nombre y progreso junto a su patio -->
+        {#each plates as pl (pl.id)}
+          <g class="plate" class:turn={pl.id === turnId} class:gone={pl.left} style:transform="translate({pl.x}px, {pl.y}px)" style:--c={hex(pl.arm)}>
+            <rect x={-pl.w / 2} y={-pl.h / 2} width={pl.w} height={pl.h} rx="0.38" class="pbg" />
+            <circle cx={-pl.w / 2 + 0.52} cy="0" r="0.34" fill={hex(pl.arm)} class="pav" />
+            <text x={-pl.w / 2 + 0.52} y="0.03" class="pini" text-anchor="middle" dominant-baseline="central">{pl.initial}</text>
+            <text x={-pl.w / 2 + 1.0} y="-0.17" class="pname" style:font-size="{pl.font}px" dominant-baseline="central">{pl.name}</text>
+            {#if pl.rank}
+              <text x={-pl.w / 2 + 1.0} y="0.28" class="prank" dominant-baseline="central">{pl.rank}º lugar</text>
+            {:else}
+              {#each pl.pips as k, i (i)}
+                <rect x={-pl.w / 2 + 1.0 + i * 0.3} y="0.14" width="0.22" height="0.26" rx="0.07" class="pip pip{k}" />
+              {/each}
+            {/if}
+            {#if pl.off || pl.auto}<circle cx={pl.w / 2 - 0.2} cy={-pl.h / 2 + 0.2} r="0.14" class={pl.off ? 'dot off' : 'dot auto'} />{/if}
+          </g>
+        {/each}
+
         <!-- Peones -->
         {#each pawns as it (it.key)}
           {@const can = canPick && it.id === turnId && movable.includes(it.pawn)}
@@ -360,6 +415,19 @@
   }
   .spark { transform-box: fill-box; transform-origin: center; animation: spark 0.8s cubic-bezier(0.1, 0.7, 0.3, 1) forwards; }
   .shock { fill: none; stroke-width: 0.12; transform-box: fill-box; transform-origin: center; animation: shock 0.7s ease-out forwards; }
+  .plate { pointer-events: none; transition: transform 0.2s; }
+  .pbg { fill: rgba(10, 8, 12, 0.86); stroke: var(--c); stroke-width: 0.08; }
+  .plate.turn .pbg { stroke-width: 0.16; fill: color-mix(in srgb, var(--c) 28%, #0a080c); animation: platepulse 1.2s ease-in-out infinite; }
+  .plate.gone { opacity: 0.4; }
+  .pname { font-family: var(--font-ui); font-weight: 700; fill: #fff; }
+  .pini { font: 800 0.4px var(--font-display); fill: #fff; paint-order: stroke; stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.05px; }
+  .prank { font: 800 0.34px var(--font-display); fill: var(--gold-hi); }
+  .pip { fill: none; stroke: color-mix(in srgb, var(--c) 70%, #fff); stroke-width: 0.05; }
+  .pip.pip1 { fill: color-mix(in srgb, var(--c) 50%, transparent); }
+  .pip.pip2 { fill: var(--c); }
+  .dot.off { fill: #e0564b; }
+  .dot.auto { fill: #ecb84a; }
+  @keyframes platepulse { 0%, 100% { opacity: 0.75; } 50% { opacity: 1; } }
   .burst { pointer-events: none; }
   .ripple { fill: none; stroke-width: 0.1; pointer-events: none; transform-box: fill-box; transform-origin: center; animation: ripple 0.6s ease-out forwards; }
   .ripple.big { stroke-width: 0.16; animation-duration: 0.8s; }

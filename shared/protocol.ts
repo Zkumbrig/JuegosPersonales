@@ -278,12 +278,14 @@ export type ClientMsg =
   | { t: 'pa:tap'; ms: number }
   | { t: 'room:kick'; pid: string }
   | { t: 'room:lock'; locked: boolean }
-  | { t: 'react'; kind: ReactionKind };
+  | { t: 'react'; kind: ReactionKind }
+  | { t: 'review'; rating: number; comment?: string };
 
 export type ServerMsg =
   | { t: 'state'; room: RoomPublic }
   | { t: 'err'; msg: string }
   | { t: 'left' }
+  | { t: 'review:ok' }
   | { t: 'kicked' }
   | { t: 'profile'; profile: ProfilePublic }
   | { t: 'achievement'; id: string }

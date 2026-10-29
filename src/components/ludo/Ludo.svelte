@@ -4,6 +4,7 @@
   import { net } from '../../lib/net.svelte';
   import { lv } from '../../lib/ludo/view.svelte';
   import { sfx } from '../../lib/sound.svelte';
+  import { reviewUi } from '../../lib/review.svelte';
   import Icon from '../Icon.svelte';
   import LudoBoard from './LudoBoard.svelte';
   import LudoDie from './LudoDie.svelte';
@@ -169,11 +170,13 @@
         bursts={lv.bursts}
         ripples={lv.ripples}
         shake={lv.shake}
+        labels
+        offline={players.filter((p) => !p.connected).map((p) => p.id)}
         onpick={pick}
       />
       </div>
       <!-- El dado se lanza sobre el tablero y luego se queda en la tarjeta de turno -->
-      <div class="tossed" class:on={lv.dice.show} class:ta={lv.dice.id % 2 === 0} class:tb={lv.dice.id % 2 === 1} aria-hidden="true">
+      <div class="tossed essential-motion" class:on={lv.dice.show} class:ta={lv.dice.id % 2 === 0} class:tb={lv.dice.id % 2 === 1} aria-hidden="true">
         <LudoDie value={lv.dice.value} rollId={lv.dice.id} rolling={lv.dice.rolling} color={diceColor} size={104} />
         {#if lv.dice.show && !lv.dice.rolling && lv.dice.value === 6}<span class="six6 display">¡Seis!</span>{/if}
       </div>
@@ -202,22 +205,6 @@
         {#if left !== null && !finished}
           <div class="bar" role="timer" aria-label="Tiempo restante"><span class:low={left < 8000} style:transform="scaleX({fraction})"></span></div>
         {/if}
-      </section>
-
-      <section class="panel seats">
-        <ul>
-          {#each pub.seats as s (s.id)}
-            {@const c = armColor(board, s.arm)}
-            <li class:cur={!finished && turn?.playerId === s.id} class:gone={s.left} style="--c:{c.hex}">
-              <span class="sw" aria-hidden="true"></span>
-              <span class="nm">{s.id === net.pid ? 'Tú' : s.name}{#if s.bot} <Icon name="sparkle" size={12} />{/if}</span>
-              <span class="st2 muted">
-                {#if s.left}Abandonó{:else if s.rank}{s.rank}.º{:else if s.auto}Auto{:else if !s.bot && !players.find((p) => p.id === s.id)?.connected}Sin conexión{/if}
-              </span>
-              <span class="pips" title="En meta · en juego · en casa">{#each pips(s.pawns) as k, i (i)}<i class={k}></i>{/each}</span>
-            </li>
-          {/each}
-        </ul>
       </section>
 
       <section class="panel log" aria-label="Últimas jugadas">
@@ -263,6 +250,7 @@
           <div class="btns">
             {#if isHost}<button class="btn btn-gold" onclick={() => net.send({ t: 'lu:reset' })}><Icon name="dice" size={18} /> Jugar otra vez</button>
             {:else}<p class="muted">Esperando al anfitrión para otra partida…</p>{/if}
+            <button class="btn btn-ghost" onclick={() => { reviewUi.open = true; }}>Valorar el juego</button>
             <button class="btn btn-ghost" onclick={() => (showResults = false)}>Ver tablero</button>
           </div>
         </div>
@@ -299,7 +287,7 @@
   .st { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--gold-lo); color: var(--gold-hi); display: grid; place-items: center; }
   .st:disabled { opacity: 0.35; }
   .roster { display: grid; gap: 6px; }
-  .roster li, .seats li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 12px; background: rgba(0, 0, 0, 0.28); border-left: 4px solid var(--c); }
+  .roster li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 12px; background: rgba(0, 0, 0, 0.28); border-left: 4px solid var(--c); }
   .sw { width: 14px; height: 14px; border-radius: 5px; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c) 55%, #fff), var(--c) 60%, color-mix(in srgb, var(--c) 60%, #000)); flex: none; }
   .nm { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
   .cn { font-size: 0.75rem; }
@@ -338,17 +326,6 @@
   .bar { grid-column: 1 / -1; height: 6px; border-radius: 99px; background: rgba(0, 0, 0, 0.45); overflow: hidden; }
   .bar span { display: block; height: 100%; background: var(--ok); transform-origin: left; transition: transform 0.25s linear; }
   .bar span.low { background: var(--danger); }
-  .seats { padding: 8px; }
-  .seats ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 6px; }
-  .seats li { transition: background 0.2s; }
-  .seats li.cur { background: color-mix(in srgb, var(--c) 26%, #0d0a07); }
-  .seats li.gone { opacity: 0.4; }
-  .st2 { font-size: 0.7rem; font-weight: 700; }
-  .pips { display: flex; gap: 3px; }
-  .pips i { width: 10px; height: 10px; border-radius: 3px; border: 2px solid var(--c); }
-  .pips i.done { background: var(--c); }
-  .pips i.out { background: linear-gradient(135deg, var(--c) 50%, transparent 50%); }
-  .pips i.home { border-color: var(--line); }
   .log { padding: 8px 12px; }
   .log ol { display: grid; gap: 3px; min-height: 4.2em; }
   .log li { font-size: 0.8rem; padding-left: 8px; border-left: 3px solid var(--c); }
@@ -370,7 +347,6 @@
   @media (min-width: 900px) {
     .play { grid-template-columns: minmax(0, 1fr) 330px; align-items: start; gap: 18px; }
     .stage { margin: 0; }
-    .seats ul { grid-template-columns: 1fr; }
     .setup { grid-template-columns: 1fr 1fr; align-items: start; }
     .setup header, .go, .wait, .center { grid-column: 1 / -1; }
   }

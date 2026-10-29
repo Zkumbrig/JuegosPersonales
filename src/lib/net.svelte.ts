@@ -178,6 +178,9 @@ class Net {
         else this.toast(hadRoom ? 'La mesa ya no existe (se cerró mientras estabas fuera).' : m.msg);
         break;
       }
+      case 'review:ok':
+        this.toast('¡Gracias! Tu valoración se guardó.', 'ok');
+        break;
       case 'sl:result':
         this.slot = { seq: ++this.slotSeq, reels: m.reels, bet: m.bet, win: m.win };
         break;
