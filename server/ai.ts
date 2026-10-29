@@ -47,7 +47,14 @@ const KIND: Record<AiKind, { what: string; format: string; shape: 'text' | 'pair
   },
   dare: {
     what: 'retos para "Reto" en Verdad o reto',
-    format: 'Cada reto es una orden corta que se cumple en el momento, en la mesa, sin salir ni tocar a nadie sin permiso, y que se puede rechazar con un trago.',
+    format:
+      'Cada reto es una ACCIÓN que se hace con el cuerpo, la voz o un objeto cotidiano, NO una pregunta ni una confesión (para eso está "Verdad"). ' +
+      'Ejemplos de tipos de acción: imitar, mímica, un mini baile, una escena actuada, una voz o acento, hablar de cierta forma durante unas rondas, ' +
+      'leer algo en voz dramática, un reto de equilibrio o de cara seria, enviar un mensaje o audio simpático con el celular delante de todos, ' +
+      'poner una pose o una cara, hacer reír a alguien sin tocarlo. ' +
+      'Se juega en un departamento pequeño y todos sentados cerca: sin salir de la habitación, sin balcón, escaleras, cocina ni baño, sin gritar ni hacer ruido fuerte ' +
+      '(hay vecinos), sin mojar ni ensuciar nada, sin comida ni bebida específica, sin objetos que no haya en cualquier sala (usa celular, cojín, vaso, una prenda, tu propia ropa puesta), ' +
+      'sin saltar, correr ni pararse sobre muebles, sin tocar a nadie, sin besos, sin quitarse ropa. Debe poder hacerse en menos de 30 segundos y se puede rechazar con un trago.',
     shape: 'text',
     examples: () => DARES.map((i) => i.text),
   },
@@ -57,7 +64,7 @@ const KIND: Record<AiKind, { what: string; format: string; shape: 'text' | 'pair
 const BLOCK = /\b(menor(es)? de edad|ni[ñn][oa]s?|adolescente|pedof|violaci[oó]n|violar|incesto|zoofil|suicid|autolesi|matar|asesin|nazi|racis|droga dura|coca[ií]na|hero[ií]na|\bhttps?:|www\.)/i;
 
 /** Los retos no pueden implicar contacto físico, besos ni quitarse ropa: regla de la casa (todo es de palabra o gestos propios). */
-const BLOCK_DARE = /\b(tocar|toques|tocando|t[oó]cale|besa|besar|beso|besos|lame|lamer|muerde|morder|desnud|qu[ií]tate|quitarte|quitar la ropa|ropa interior|sin ropa|acaricia|acariciar|masaj|abraza|abrazar|cu[eé]llo de|espalda de|dibuja con tu dedo|a la persona (a tu|de tu))/i;
+const BLOCK_DARE = /\b(tocar|toques|tocando|t[oó]cale|besa|besar|beso|besos|lame|lamer|muerde|morder|desnud|qu[ií]tate|quitarte|quitar la ropa|ropa interior|sin ropa|acaricia|acariciar|masaj|abraza|abrazar|cu[eé]llo de|espalda de|dibuja con tu dedo|brazo de|mano de|o[ií]do|susurr|quitar[ií]as|quitara|llama a|llamar a|llamada a|gritar|grita|gritando|saltar|salta|saltando|correr|corre|escalera|balc[oó]n|cocina|ba[ñn]o|afuera|la calle|vecin|ventana|mojar|encima de la (mesa|silla|cama)|a la persona (a tu|de tu))/i;
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9ñ ]/g, '').replace(/\s+/g, ' ').trim();
 
@@ -91,12 +98,26 @@ export function cleanItem(kind: AiKind, raw: unknown): AiItem | null {
   return t.charAt(0) === t.charAt(0).toUpperCase() || kind === 'likely' ? t : t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-const keyOf = (kind: AiKind, level: Level) => `${kind}:${level}`;
+const STOP = new Set('que para con una uno unos unas los las del por como pero mas muy sus tus esta este esto esa ese eso hay has han fue ser sea hacer tiene tener'.split(' '));
+/** Huella de una frase: raíces (5 letras) de sus palabras con contenido. */
+export function sig(text: string): Set<string> {
+  return new Set(norm(text).split(' ').filter((w) => w.length > 3 && !STOP.has(w)).map((w) => w.slice(0, 5)));
+}
+/** ¿Dos frases hablan de lo mismo? (mucho solapamiento de palabras con contenido) */
+export function similar(a: Set<string>, b: Set<string>): boolean {
+  if (a.size < 3 || b.size < 3) return false;
+  let inter = 0;
+  for (const w of a) if (b.has(w)) inter++;
+  return inter / Math.min(a.size, b.size) >= 0.6 && inter >= 3;
+}
+
+const keyOf =(kind: AiKind, level: Level) => `${kind}:${level}`;
 const textOf = (i: AiItem) => (typeof i === 'string' ? i : `${i[0]} / ${i[1]}`);
 
 export class AiContent {
   private pools = new Map<string, AiItem[]>();
   private seen = new Set<string>(); // lo ya generado y lo curado: no se repite
+  private sigs: { kind: AiKind; sig: Set<string> }[] = []; // para detectar frases parecidas, no solo idénticas
   private inflight = new Set<string>();
   private retryAt = 0;
   /** Para pruebas: sustituye a la llamada de red. */
@@ -125,7 +146,12 @@ export class AiContent {
     this.inflight.add(key);
     try {
       if (this.seen.size === 0) {
-        for (const k of Object.keys(KIND) as AiKind[]) for (const e of KIND[k].examples()) this.seen.add(norm(e));
+        for (const k of Object.keys(KIND) as AiKind[]) {
+          for (const e of KIND[k].examples()) {
+            this.seen.add(norm(e));
+            this.sigs.push({ kind: k, sig: sig(e) });
+          }
+        }
       }
       const raw = await this.generate(kind, level);
       const pool = this.pools.get(key) ?? [];
@@ -135,7 +161,10 @@ export class AiContent {
         if (!item) continue;
         const n = norm(textOf(item));
         if (this.seen.has(n)) continue;
+        const s = sig(textOf(item));
+        if (this.sigs.some((o) => o.kind === kind && similar(o.sig, s))) continue; // misma idea con otras palabras
         this.seen.add(n);
+        this.sigs.push({ kind, sig: s });
         pool.push(item);
         added++;
       }
@@ -154,14 +183,15 @@ export class AiContent {
   private async generate(kind: AiKind, level: Level): Promise<unknown[]> {
     const spec = KIND[kind];
     const pool = spec.examples();
-    const sample = Array.from({ length: 6 }, () => pool[Math.floor(Math.random() * pool.length)]).filter((v, i, a) => a.indexOf(v) === i);
+    const sample = Array.from({ length: 16 }, () => pool[Math.floor(Math.random() * pool.length)]).filter((v, i, a) => a.indexOf(v) === i);
     const prompt = [
       `Eres guionista de juegos de fiesta entre amigos adultos (+18), en español latino neutro, sin regionalismos ni emojis.`,
       `Genera ${BATCH} ${spec.what}, TODAS distintas entre sí, originales y variadas en temática.`,
       `Intensidad: ${LEVEL_TEXT[level]}`,
       spec.format,
       `Reglas: sin nombres propios, sin pedir datos personales, nada con menores, nada ilegal o peligroso, nada discriminatorio, nada que obligue a nadie (todo se puede rechazar).`,
-      `Ejemplos del tono (NO los copies): ${sample.map((s) => `"${s}"`).join(' | ')}`,
+      `Estas ya las tenemos: ${sample.map((s) => `"${s}"`).join(' | ')}`,
+      `Dame ideas NUEVAS: otros temas, otras situaciones y otra estructura. Evita lo parecido a esas (mismo tema con otras palabras cuenta como repetido).`,
       `Responde SOLO con un arreglo JSON de ${spec.shape === 'pair' ? 'objetos {a,b}' : 'cadenas'}.`,
     ].join('\n');
 

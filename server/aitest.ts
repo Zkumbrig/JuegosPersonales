@@ -1,6 +1,6 @@
 // Pruebas de las frases generadas con IA (sin red: se simula la respuesta de Gemini). npm test
 import assert from 'node:assert/strict';
-import { AiContent, cleanItem } from './ai';
+import { AiContent, cleanItem, sig, similar } from './ai';
 
 let n = 0;
 async function test(name: string, fn: () => void | Promise<void>) {
@@ -54,9 +54,9 @@ await test('rechaza temas prohibidos, enlaces y textos raros', () => {
 await test('rellena el pozo, descarta repetidas y las gasta una sola vez', async () => {
   const ai = new AiContent();
   ai.fetcher = reply([
-    'Yo nunca he fingido una llamada para escapar de una cita.',
-    'Yo nunca he fingido una llamada para escapar de una cita.', // repetida
-    'yo nunca he mandado un audio de tres minutos a la persona equivocada.',
+    'Yo nunca he aprendido un baile viral solo para una fiesta.',
+    'Yo nunca he aprendido un baile viral solo para una fiesta.', // repetida
+    'yo nunca he leído un libro entero en una sola noche.',
     'Esto no empieza como toca',
     'Yo nunca he rechazado un abrazo de un desconocido en un tren.',
   ]) as typeof fetch;
@@ -91,6 +91,17 @@ await test('si Gemini falla, se espera un rato y el juego sigue sin la IA', asyn
   console.warn = warn;
   assert.equal(calls, 1);
   assert.equal(ai.take('truth', 3), null);
+});
+
+await test('retos de minidepa: nada de gritar, saltar, balcón ni baño', () => {
+  for (const bad of ['Sal al balcón y saluda a los vecinos.', 'Grita tu nombre lo más fuerte que puedas.', 'Salta tres veces sobre un pie.', 'Ve al baño y vuelve con una cara nueva.', 'Escribe en el brazo de la persona a tu derecha una inicial.', 'Susúrrale al oído una fantasía a alguien del grupo.', 'Llama a un contacto al azar y pídele un consejo.']) assert.equal(cleanItem('dare', bad), null, bad);
+  assert.ok(cleanItem('dare', 'Imita a un presentador de noticias durante tu próxima frase.'));
+});
+
+await test('detecta frases parecidas aunque cambien las palabras', () => {
+  const a = sig('Yo nunca he fingido una llamada para escapar de una cita aburrida.');
+  assert.ok(similar(a, sig('Yo nunca he fingido una llamada telefónica para escapar de una cita.')));
+  assert.ok(!similar(a, sig('Yo nunca he bailado encima de una mesa en una boda.')));
 });
 
 await test('AI_CONTENT=0 la desactiva aunque haya clave', () => {
