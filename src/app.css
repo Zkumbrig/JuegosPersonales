@@ -90,6 +90,29 @@
   --theme-color: #05080f;
 }
 
+[data-theme='rose'] {
+  --bg: #0d0709;
+  --bg-glow: #4a1a2e;
+  --panel: #1c1015;
+  --line: #4d2c38;
+  --felt-hi: #b5506b;
+  --felt: #8a3350;
+  --felt-dark: #4f1a2e;
+  --gold: #ecb8a4;
+  --gold-hi: #ffe4d8;
+  --gold-lo: #a6695d;
+  --accent-rgb: 236 184 164;
+  --on-accent: #2b130f;
+  --foil: linear-gradient(115deg, #fff1ea 0%, #f4c4b2 24%, #ea9fb0 48%, #f9dccd 64%, #d99484 82%, #a8685a 100%);
+  --back-1: #43204f;
+  --back-2: #230c2d;
+  --machine-1: #4d1830;
+  --machine-2: #260b17;
+  --text: #f7e8e4;
+  --muted: #bc9fa2;
+  --theme-color: #0d0709;
+}
+
 :root {
   color-scheme: dark; /* controles nativos (casillas, deslizadores) en oscuro */
   --burgundy: #6b1423;

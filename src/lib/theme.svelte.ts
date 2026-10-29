@@ -3,6 +3,7 @@ export const THEMES = [
   { id: 'neon', name: 'Neón', colors: ['#3a1a7a', '#4cc9f0'] },
   { id: 'rubi', name: 'Rubí', colors: ['#a01b30', '#d9b45a'] },
   { id: 'zafiro', name: 'Zafiro', colors: ['#1c4f9c', '#c4d3ea'] },
+  { id: 'rose', name: 'Rosé', colors: ['#b5506b', '#ecb8a4'] },
 ] as const;
 
 export type ThemeId = (typeof THEMES)[number]['id'];
