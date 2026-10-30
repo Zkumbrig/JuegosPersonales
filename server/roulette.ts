@@ -139,7 +139,10 @@ export class Roulette {
       this.last.set(pid, list.map((b) => ({ ...b })));
       if (back - stake > 0) this.room.noteWin(pid, back - stake, 'Ruleta');
     }
-    this.room.noteRound();
+    this.room.noteRound({
+      game: 'roulette',
+      players: [...this.net].map(([pid, score]) => ({ pid, name: this.room.players.get(pid)?.name ?? 'Jugador', score })),
+    });
     this.history.unshift(n);
     this.history.length = Math.min(this.history.length, 12);
     this.phase = 'result';

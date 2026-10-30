@@ -32,6 +32,11 @@
     scrollbar-width: none;
   }
   .strip::-webkit-scrollbar { display: none; }
+  @media (max-height: 740px) {
+    .strip { padding: 2px 2px 4px; }
+    .p { padding: 4px 10px 4px 4px; min-width: 96px; }
+    .avatar { width: 30px; height: 30px; }
+  }
   .p {
     flex: none;
     display: grid;

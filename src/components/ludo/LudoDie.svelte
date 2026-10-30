@@ -10,7 +10,8 @@
     color?: string;
     /** Si es true es el botón de tirar. */
     active?: boolean;
-    size?: number;
+    /** Píxeles, o cualquier medida CSS (por ejemplo "min(104px, 24cqw)") para que sea proporcional a su contenedor. */
+    size?: number | string;
     onroll?: () => void;
   };
   let { value, rollId, rolling = false, color = '#d9b45a', active = false, size = 88, onroll }: Props = $props();
@@ -31,17 +32,22 @@
 
   const pose = $derived.by(() => {
     const [bx, by] = FACE[value ?? 1] ?? FACE[1]!;
-    return `rotateX(${bx - 14}deg) rotateY(${by + 18}deg)`;
+    // Reposo de frente: se ve solo la cara que salió, limpia y sin ambigüedad (antes se inclinaba y se veían tres caras).
+    return `rotateX(${bx}deg) rotateY(${by}deg)`;
   });
   const par = $derived(rollId % 2 === 0 ? 'a' : 'b');
 </script>
 
-<div class="wrap essential-motion" class:active style:--s="{size}px" style:--ring={color}>
+<div class="wrap essential-motion" class:active style:--s={typeof size === 'number' ? `${size}px` : size} style:--ring={color}>
   <span class="halo" aria-hidden="true"></span>
   <button class="stage" disabled={!active} onclick={onroll} aria-label={active ? 'Tirar el dado' : value ? `Dado: ${value}` : 'Dado'}>
     <span class="toss" class:ta={rolling && par === 'a'} class:tb={rolling && par === 'b'}>
       <span class="spin" class:sa={rolling && par === 'a'} class:sb={rolling && par === 'b'}>
         <span class="cube" style:transform={pose}>
+          <!-- Núcleo sólido: tapa los huecos que dejan las esquinas redondeadas de las caras en cada vértice. -->
+          {#each FACES as f (f.n)}
+            <span class="core" style:transform="{f.t} translateZ(calc(var(--s) * 0.4))"></span>
+          {/each}
           {#each FACES as f (f.n)}
             <span class="face" style:transform="{f.t} translateZ(calc(var(--s) / 2))">
               {#each [0, 1, 2, 3, 4, 5, 6, 7, 8] as i (i)}
@@ -106,6 +112,13 @@
     border-radius: 18%;
     background: linear-gradient(145deg, #fffdf6 0%, #efe6cd 60%, #dccfae 100%);
     box-shadow: inset 0 0 0 2px rgb(var(--accent-rgb) / 0.55), inset 0 -6px 14px rgba(120, 90, 30, 0.22);
+    backface-visibility: hidden;
+  }
+  /* Seis placas sin esquinas redondeadas, un poco por dentro de las caras (80 % del lado a 0.4 del centro). */
+  .core {
+    position: absolute;
+    inset: 10%;
+    background: #e7dcc0;
     backface-visibility: hidden;
   }
   .cell { display: grid; place-items: center; }

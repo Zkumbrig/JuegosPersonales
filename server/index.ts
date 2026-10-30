@@ -9,7 +9,9 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { Player, Room } from './room';
 import { loadRooms, saveRooms } from './persist';
 import { profiles } from './profiles';
+import { authRoutes } from './authHttp';
 import { getDb } from './db';
+import { renderMetrics, telemetry } from './telemetry';
 import { renderAdmin, reviews } from './reviews';
 import { timingSafeEqual } from 'node:crypto';
 import { makeCode, rnd } from './util';
@@ -55,20 +57,27 @@ function adminKeyOk(given: string): boolean {
   const b = Buffer.from(key);
   return a.length === b.length && timingSafeEqual(a, b);
 }
-async function adminReviews(req: IncomingMessage, url: URL, res: http.ServerResponse) {
-  const headers = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex', 'Referrer-Policy': 'no-referrer' };
-  if ((process.env.ADMIN_KEY ?? '').length < 12) { res.writeHead(404, headers).end(); return; }
+const ADMIN_HEADERS = { 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex', 'Referrer-Policy': 'no-referrer' };
+/** Comprueba la clave de administrador. Si no es válida ya respondió (404 o 429) y devuelve false. */
+function adminGate(req: IncomingMessage, url: URL, res: http.ServerResponse): boolean {
+  const headers = ADMIN_HEADERS;
+  if ((process.env.ADMIN_KEY ?? '').length < 12) { res.writeHead(404, headers).end(); return false; }
   const ip = TRUST_PROXY ? String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() || (req.socket.remoteAddress ?? '?') : (req.socket.remoteAddress ?? '?');
   const f = adminFails.get(ip);
-  if (f && Date.now() - f.since < 10 * 60_000 && f.n >= 8) { res.writeHead(429, headers).end('Demasiados intentos'); return; }
+  if (f && Date.now() - f.since < 10 * 60_000 && f.n >= 8) { res.writeHead(429, headers).end('Demasiados intentos'); return false; }
   const given = url.searchParams.get('key') ?? String(req.headers['x-admin-key'] ?? '');
   if (!adminKeyOk(given)) {
     const cur = f && Date.now() - f.since < 10 * 60_000 ? f : { n: 0, since: Date.now() };
     cur.n++;
     adminFails.set(ip, cur);
     res.writeHead(404, headers).end();
-    return;
+    return false;
   }
+  return true;
+}
+async function adminReviews(req: IncomingMessage, url: URL, res: http.ServerResponse) {
+  if (!adminGate(req, url, res)) return;
+  const headers = ADMIN_HEADERS;
   const list = await reviews.list(500);
   if (url.searchParams.get('format') === 'json') {
     res.writeHead(200, { ...headers, 'Content-Type': 'application/json; charset=utf-8' }).end(JSON.stringify({ mode: reviews.mode, reviews: list }));
@@ -77,11 +86,23 @@ async function adminReviews(req: IncomingMessage, url: URL, res: http.ServerResp
   }
 }
 
+async function adminMetrics(req: IncomingMessage, url: URL, res: http.ServerResponse) {
+  if (!adminGate(req, url, res)) return;
+  const report = await telemetry.report();
+  if (url.searchParams.get('format') === 'json') {
+    res.writeHead(200, { ...ADMIN_HEADERS, 'Content-Type': 'application/json; charset=utf-8' }).end(JSON.stringify(report));
+  } else {
+    res.writeHead(200, { ...ADMIN_HEADERS, 'Content-Type': 'text/html; charset=utf-8' }).end(renderMetrics(report));
+  }
+}
+
 // ---------- HTTP estático (producción) ----------
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', 'http://x');
     if (url.pathname === '/admin/reviews') return void (await adminReviews(req, url, res));
+    if (url.pathname === '/admin/metrics') return void (await adminMetrics(req, url, res));
+    if (await authRoutes(req, res, url)) return; // /api/auth/*: inicio de sesión por correo
     if (url.pathname === '/healthz') { res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok'); return; } // para el monitor de la plataforma
     let file = path.join(DIST, decodeURIComponent(url.pathname));
     if (!file.startsWith(DIST)) { res.writeHead(403).end(); return; }
@@ -107,9 +128,11 @@ const rooms = new Map<string, Room>();
 for (const r of loadRooms(DATA_FILE, (c) => rooms.delete(c))) rooms.set(r.code, r);
 if (rooms.size) console.log(`Recuperadas ${rooms.size} mesa(s) de la última copia`);
 profiles.init(DATA_FILE.replace(/\.json$/, '') + '.profiles.json');
-await profiles.attachDb(await getDb()); // con Supabase, los perfiles y logros se guardan allí
+const db = await getDb();
+await profiles.attachDb(db); // con Supabase, los perfiles y logros se guardan allí
+telemetry.attach(db); // y la medición de sesiones, rondas y regresos
 await reviews.init(DATA_FILE.replace(/\.json$/, '') + '.reviews.json');
-const persistTimer = setInterval(() => { saveRooms(DATA_FILE, rooms.values()); void profiles.save(); }, PERSIST_MS);
+const persistTimer = setInterval(() => { saveRooms(DATA_FILE, rooms.values()); void profiles.save().then(() => telemetry.flush()); }, PERSIST_MS);
 persistTimer.unref();
 
 // ---------- Límites por IP ----------
@@ -267,7 +290,8 @@ wss.on('connection', (ws, req) => {
 // ---------- Apagado limpio: guarda las mesas para recuperarlas al volver ----------
 async function shutdown() {
   saveRooms(DATA_FILE, rooms.values());
-  await Promise.race([profiles.save(), new Promise((r) => setTimeout(r, 4000))]); // con base de datos, escribe lo pendiente
+  for (const code of rooms.keys()) telemetry.sessionClose(code);
+  await Promise.race([profiles.save().then(() => telemetry.flush()), new Promise((r) => setTimeout(r, 4000))]); // con base de datos, escribe lo pendiente
   process.exit(0);
 }
 process.on('SIGTERM', shutdown);

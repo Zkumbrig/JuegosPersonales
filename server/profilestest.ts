@@ -18,8 +18,10 @@ console.log('Perfiles con base de datos (PGlite)');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const migration = fs.readFileSync(path.join(ROOT, 'db', 'migrations', '0001_init.sql'), 'utf8');
 
+const opened: PGlite[] = [];
 async function freshDb() {
   const pg = new PGlite();
+  opened.push(pg);
   // Supabase trae el esquema auth; aquí se imita lo mínimo para las referencias.
   await pg.exec('create schema auth; create table auth.users (id uuid primary key default gen_random_uuid());');
   await pg.exec(migration);
@@ -142,4 +144,4 @@ await test('la migración deja RLS activo en todas las tablas', async () => {
 });
 
 console.log(`Perfiles: ${n} pruebas correctas`);
-process.exit(0);
+for (const pg of opened) await pg.close();

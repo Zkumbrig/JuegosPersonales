@@ -27,7 +27,7 @@
 
 <style>
   .wrap { position: relative; }
-  .icon { color: var(--gold-hi); width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); font-size: 1.05rem; display: grid; place-items: center; background: rgba(255, 255, 255, 0.03); }
+  .icon { color: var(--gold-hi); width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); font-size: 1.05rem; display: grid; place-items: center; background: rgba(255, 255, 255, 0.03); }
   .menu { position: absolute; right: 0; top: 48px; z-index: 30; padding: 6px; display: grid; gap: 2px; min-width: 150px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6); animation: fadeUp 0.18s ease both; }
   .opt { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 12px; font-size: 0.9rem; text-align: left; }
   .opt.on { background: rgb(var(--accent-rgb) / 0.14); color: var(--gold-hi); }

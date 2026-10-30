@@ -2,6 +2,8 @@ import { randomInt } from 'node:crypto';
 
 export const rnd = (n: number) => randomInt(n);
 
+export const pick = <T>(a: readonly T[]): T => a[randomInt(a.length)]!;
+
 export function shuffle<T>(a: T[]): T[] {
   for (let i = a.length - 1; i > 0; i--) {
     const j = randomInt(i + 1);

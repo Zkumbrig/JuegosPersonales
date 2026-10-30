@@ -4,6 +4,7 @@
   import { drinkNoun } from '../lib/party';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
+  import Art from './Art.svelte';
   import Flames from './Flames.svelte';
 
   const pa = $derived(net.room!.party);
@@ -26,7 +27,7 @@
   <div class="grid">
     {#each PARTY_GAMES as g (g.id)}
       <button class="tile ticket panel" disabled={!isHost} onclick={() => net.send({ t: 'game', game: g.id })}>
-        <span class="ico" aria-hidden="true"><Icon name={g.icon} size={30} /></span>
+        <span class="ico" aria-hidden="true"><Art name={g.id} size={46} /></span>
         <span class="name">{g.name}</span>
         <span class="tag">{g.tagline}</span>
       </button>
@@ -45,7 +46,7 @@
           disabled={!isHost}
           onclick={() => net.send({ t: 'pa:level', level: l.id })}
         >
-          <span class="fl"><Flames n={l.flames} size={15} /></span>
+          <span class="fl"><Flames n={l.flames} size={20} /></span>
           <b>{l.name}</b>
           <small>{l.hint}</small>
         </button>
@@ -84,30 +85,34 @@
 </div>
 
 <style>
-  .hub { display: flex; flex-direction: column; gap: 12px; }
+  .hub { display: flex; flex-direction: column; gap: 10px; }
   header { text-align: center; }
-  h2 { margin: 0; font-size: 1.7rem; line-height: 1.2; font-weight: 800; }
-  header p { margin: 2px 0 0; font-size: 0.85rem; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  h2 { margin: 0; font-size: 1.4rem; line-height: 1.2; font-weight: 800; }
+  header p { margin: 0; font-size: 0.85rem; }
+  /* Tres columnas: los seis juegos caben en dos filas y todo el menú entra sin deslizar en un móvil. */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .tile {
-    display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px 12px; text-align: left;
-    min-height: 124px; transition: transform 0.12s, border-color 0.2s; animation: fadeUp 0.35s ease both;
+    display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 10px 12px; text-align: left;
+    min-height: 112px; transition: transform 0.12s, border-color 0.2s; animation: fadeUp 0.35s ease both;
   }
+  .tag { display: none; }
+  @media (min-width: 520px) { .tag { display: block; } .tile { min-height: 132px; } }
   .tile:not(:disabled):active { transform: scale(0.97); }
   .tile:not(:disabled) { border-color: var(--gold-lo); }
   .tile:disabled { opacity: 0.75; }
-  .ico {
-    width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--gold-grad); color: var(--on-accent);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 6px 14px rgb(var(--accent-rgb) / 0.22);
-  }
-  .name { font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; line-height: 1.2; color: var(--gold-hi); margin-top: 6px; letter-spacing: -0.01em; }
+  .ico { width: 44px; height: 44px; display: grid; place-items: center; transition: transform 0.25s ease; }
+  .tile:not(:disabled):hover .ico, .tile:not(:disabled):focus-visible .ico { transform: scale(1.06); }
+  .name { font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; line-height: 1.2; color: var(--gold-hi); margin-top: 4px; letter-spacing: -0.01em; }
   .tag { font-size: 0.74rem; color: var(--muted); line-height: 1.3; }
 
-  .box { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .box { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  @media (max-height: 760px) { .soft small, .lv small { display: none; } }
+  /* Móviles muy bajos: la pestaña ya dice "Fiesta", así que se quita el título para ganar sitio. */
+  @media (max-height: 620px) { header { display: none; } .tile { min-height: 96px; } .box { padding: 10px; gap: 8px; } }
   h3 { margin: 0; font-size: 0.78rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
   .levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .lv {
-    display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 8px 4px; min-height: 64px; border-radius: 14px;
     border: 1px solid var(--line); text-align: center;
   }
   .lv.on { border-color: var(--gold); background: rgb(var(--accent-rgb) / 0.14); }

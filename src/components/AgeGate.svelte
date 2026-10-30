@@ -9,7 +9,7 @@
   <div class="seal" aria-hidden="true">18+</div>
   <h1><Logo size={1.2} /></h1>
   {#if !denied}
-    <p class="lead">Casino y fiesta entre amigos.<br />Solo para mayores de 18 años.</p>
+    <p class="lead">Tu noche de juegos en una sola mesa.<br />Solo para mayores de 18 años.</p>
     <p class="small muted">
       Aquí se juega con <strong>fichas virtuales</strong>: no hay dinero real, ni premios, ni anuncios.
       Juega con responsabilidad y, si bebes, hazlo con moderación.

@@ -130,7 +130,7 @@
   header { display: flex; justify-content: space-between; align-items: center; }
   header div { display: flex; flex-direction: column; line-height: 1.1; }
   .code { font-size: 1.7rem; font-weight: 900; letter-spacing: 0.16em; }
-  .x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--gold-hi); }
+  .x { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--gold-hi); }
   .two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .two .btn { padding: 0 0.6rem; }
   .tvinfo { display: grid; gap: 10px; padding: 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); }

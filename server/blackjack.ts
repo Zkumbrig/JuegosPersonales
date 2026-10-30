@@ -325,7 +325,10 @@ export class Blackjack {
         else if (seat.delta >= 500) this.room.addFeed(`${p.name} ganó ${seat.delta} en el blackjack`);
       }
     }
-    this.room.noteRound();
+    this.room.noteRound({
+      game: 'blackjack',
+      players: this.seats.map((s) => ({ pid: s.id, name: this.room.players.get(s.id)?.name ?? 'Jugador', score: s.delta ?? 0 })),
+    });
     this.setTimer(PAYOUT_WINDOW, () => this.reset());
     this.room.broadcast();
   }

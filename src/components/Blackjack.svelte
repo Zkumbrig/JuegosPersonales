@@ -211,6 +211,10 @@
   .dealer, .status, .seats { position: relative; z-index: 1; }
   .dealer { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .who { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.25em; color: rgba(255, 255, 255, 0.55); }
+  @media (max-height: 740px) {
+    .table { min-height: 250px; padding: 10px 8px; gap: 6px; }
+    .hand.big { --card-w: 52px; min-height: 76px; }
+  }
   .hand { display: flex; justify-content: center; min-height: 40px; --card-w: 58px; }
   .hand.big { --card-w: 62px; min-height: 88px; }
   .hand.small { --card-w: 42px; }

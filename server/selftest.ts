@@ -476,12 +476,14 @@ console.log(`Tragaperras OK: ${a.slot!.reels.join(' ')} → ${a.slot!.win}`);
   await until(() => P().phase === 'reveal', 'revelación automática');
   assert.deepEqual(P().drinkers, [a.pid]);
   assert.equal(P().tally[a.pid], 1);
+  assert.ok(P().quip && P().quip!.length > 10, 'la mesa comenta al revelar');
   console.log('Fiesta: Yo nunca OK');
 
   // ¿Quién es más probable?: el más votado bebe
   await setGame('likely');
   a.send({ t: 'pa:next' });
   await until(() => P().phase === 'asking', 'ronda likely');
+  assert.equal(P().quip, null, 'sin comentario mientras se vota');
   assert.match(P().prompt!, /^¿Quién es más probable/);
   a.errors.length = 0;
   a.send({ t: 'pa:answer', value: 'no-existe' });

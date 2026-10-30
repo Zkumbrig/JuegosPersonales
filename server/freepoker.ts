@@ -155,7 +155,6 @@ export class FreePoker {
     }
     this.phase = 'preflop';
     this.hands++;
-    this.room.noteRound();
     this.setTimer(DECIDE_TIME, () => this.timeout());
     this.room.broadcast();
   }
@@ -228,6 +227,10 @@ export class FreePoker {
       this.room.addFeed(winners.length > 1 ? `${names} empatan en el póker` : `${names} ganó la mano de póker`);
     }
     // Sin cartas de personas que ya se fueron
+    this.room.noteRound({
+      game: 'freepoker',
+      players: this.seats.filter((s) => s.inHand).map((s) => ({ pid: s.id, name: this.nameOf(s.id), rank: s.won ? 1 : 2 })),
+    });
     this.seats = this.seats.filter((s) => !s.left && this.room.players.has(s.id));
     this.setTimer(reveal ? SHOWDOWN_TIME : UNCONTESTED_TIME, () => this.backToWaiting());
     this.room.broadcast();

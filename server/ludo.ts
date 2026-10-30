@@ -63,6 +63,7 @@ export class Ludo {
   private order: number[] = [];
   private ranked = 0;
   private seq = 0;
+  private startedAt = 0;
   private events: LudoEvent[] = [];
   private cancel: (() => void) | null = null;
   private readonly timing: LudoTiming;
@@ -143,6 +144,7 @@ export class Ludo {
     this.order = this.seats.map((_, i) => i).sort((a, b) => this.seats[a]!.arm - this.seats[b]!.arm);
     this.ranked = 0;
     this.phase = 'playing';
+    this.startedAt = this.now();
     const first = this.order[randomInt(this.order.length)]!;
     this.emit({ type: 'start', playerId: this.seats[first]!.id });
     this.beginTurn(first, 0);
@@ -310,7 +312,12 @@ export class Ludo {
     this.emit({ type: 'end' });
     const winner = this.seats.find((s) => s.rank === 1);
     if (winner) this.room.addFeed(`${winner.name} ganó el Ludo`);
-    this.room.noteRound();
+    this.room.noteRound({
+      game: 'ludo',
+      board: this.options.board,
+      durationS: Math.round((this.now() - this.startedAt) / 1000),
+      players: this.seats.map((s) => ({ pid: s.bot ? undefined : s.id, name: s.name, bot: s.bot, rank: s.rank ?? undefined })),
+    });
   }
 
   // ---------- Entradas y salidas de la mesa ----------

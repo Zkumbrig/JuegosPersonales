@@ -78,3 +78,21 @@ Son **privadas**: solo las ves tú.
 
 Sin `DATABASE_URL` las reseñas se guardan en un archivo local, solo útil para desarrollo: en Render gratis se perderían al dormirse.
 Cada persona puede valorar cada juego una vez cada 12 horas.
+
+## Métricas de producto (privadas)
+
+Con la base de datos conectada y las migraciones `0001` y `0002` aplicadas, el servidor mide mesas, rondas y regresos. Míralo en `/admin/metrics?key=TU_CLAVE` (mismo `ADMIN_KEY` que las reseñas): uso por juego, mesas por día y regreso a 7 y 30 días por semana de llegada. Son solo conteos, sin datos personales.
+
+## Inicio con correo (cuentas y progreso)
+
+Quien entra con su correo conserva perfil, logros y estadísticas aunque cambie de teléfono o borre el navegador. Es con un **código de un solo uso** que llega al correo: no hay contraseñas. Quien prefiere jugar sin cuenta puede hacerlo (los amigos invitados a una mesa entran directo, sin registrarse).
+
+Requisitos (todo se hace en el panel de Supabase, sin escribir claves en ningún chat):
+
+1. **Authentication → Providers → Email**: déjalo activado.
+2. **Authentication → Email Templates**: en las plantillas **Magic Link** y **Confirm signup** cambia el texto para que muestre el código, por ejemplo: `<p>Tu código de Royale Club es <b>{{ .Token }}</b></p>`. Sin `{{ .Token }}` el correo solo trae un enlace y la app no puede usarlo.
+3. **Project Settings → API**: copia la clave **anon / public** (no la `service_role`) y ponla en Render (y en tu `.env`) como `SUPABASE_ANON_KEY`. La dirección del proyecto se deduce de `DATABASE_URL`; si quieres fijarla, añade `SUPABASE_URL=https://TU_REF.supabase.co`.
+4. **Envío de correos**: el servicio integrado de Supabase es solo para pruebas y envía muy pocos correos por hora. Para usarlo con gente real configura tu propio SMTP en **Authentication → SMTP Settings** (por ejemplo Resend o Brevo, ambos con plan gratuito).
+5. El código puede tener 6 u 8 dígitos según el proyecto; la app acepta de 6 a 10.
+
+Sin `SUPABASE_ANON_KEY` o sin `DATABASE_URL` la opción de correo no aparece y todo funciona como invitado. El correo lo guarda Supabase Auth, no nuestras tablas; nuestro perfil solo guarda el identificador de la cuenta (`profiles.user_id`).

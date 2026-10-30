@@ -1,6 +1,7 @@
 // Pruebas de las frases generadas con IA (sin red: se simula la respuesta de Gemini). npm test
 import assert from 'node:assert/strict';
-import { AiContent, cleanItem, sig, similar } from './ai';
+import { AiContent, QuipMaker, cleanItem, cleanQuip, sig, similar } from './ai';
+import { curatedQuip, joinNames, type QuipCtx } from './quips';
 
 let n = 0;
 async function test(name: string, fn: () => void | Promise<void>) {
@@ -108,6 +109,144 @@ await test('AI_CONTENT=0 la desactiva aunque haya clave', () => {
   process.env.AI_CONTENT = '0';
   assert.equal(new AiContent().enabled, false);
   delete process.env.AI_CONTENT;
+});
+
+// ---------- Comentarios con gracia ----------
+const textReply = (text: string, status = 200) => async () =>
+  new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text }] } }] }), { status });
+const REQ = { game: 'never', prompt: 'Yo nunca he mandado un mensaje al ex.', level: 2, outcome: '3 de 5 personas dijeron que sí lo han hecho' } as const;
+
+await test('el comentario de la IA se limpia y descarta lo que no sirve', () => {
+  assert.equal(cleanQuip('"Tres de cinco: el ex tiene el chat más concurrido del mes."'), 'Tres de cinco: el ex tiene el chat más concurrido del mes.');
+  assert.equal(cleanQuip('Corto'), null, 'demasiado corto');
+  assert.equal(cleanQuip('x'.repeat(200)), null, 'demasiado largo');
+  assert.equal(cleanQuip('Qué risa de ronda 😂 la verdad'), null, 'sin emojis');
+  assert.equal(cleanQuip('Frase con {llaves} dentro de ella'), null);
+  assert.equal(cleanQuip(42), null);
+});
+
+await test('la IA solo habla si es específica: SKIP, relleno, sin relación con la pregunta o contradiciendo el resultado', () => {
+  const req = { game: 'never', prompt: 'Yo nunca he dejado morir una planta por olvidarme de regarla.', level: 1, outcome: '3 de 5 personas dijeron que sí', anyDrink: true } as const;
+  assert.equal(cleanQuip('SKIP', req), null, 'SKIP = no hay nada gracioso');
+  assert.equal(cleanQuip('skip', req), null);
+  assert.equal(cleanQuip('Tres verdugos de plantas confesos; el balcón pide abogado.', req), 'Tres verdugos de plantas confesos; el balcón pide abogado.');
+  assert.equal(cleanQuip('Parece que alguien recordó por qué odia los lunes y las plantas.', req), null, 'muletilla "Parece que"');
+  assert.equal(cleanQuip('Qué grupo tan talentoso tenemos aquí hoy.', req), null, 'muletilla "Qué grupo"');
+  assert.equal(cleanQuip('Los lunes siempre son un desastre para todo el mundo.', req), null, 'no habla de la pregunta');
+  assert.equal(cleanQuip('Nadie ha matado una planta, qué gente tan decente.', req), null, 'contradice: sí hubo culpables');
+  assert.equal(cleanQuip('Una frase larguísima que sigue y sigue sin parar hablando de plantas y de cómo mueren todas por olvido total.', req), null, 'demasiadas palabras');
+  const none = { ...req, anyDrink: false, outcome: 'nadie dijo que sí' };
+  assert.equal(cleanQuip('Ni una planta muerta: aquí hay jardineros o mentirosos que beben.', none), null, 'habla de beber cuando nadie bebe');
+  assert.ok(cleanQuip('Ni una planta muerta: o son jardineros o son mentirosos.', none));
+});
+
+await test('no repite la misma idea dos veces seguidas', async () => {
+  const q = new QuipMaker();
+  q.fetcher = textReply('Tres verdugos de plantas confesos; el balcón pide abogado.') as typeof fetch;
+  const req = { game: 'never', prompt: 'Yo nunca he dejado morir una planta por olvidarme.', level: 1, outcome: '3 de 5 sí', anyDrink: true } as const;
+  assert.ok(await q.make(req));
+  assert.equal(await q.make(req), null, 'la segunda vez es la misma idea');
+});
+
+await test('sin clave o con AI_QUIPS=0 no pide nada', async () => {
+  const q = new QuipMaker();
+  let calls = 0;
+  q.fetcher = (async () => { calls++; return new Response('{}'); }) as typeof fetch;
+  process.env.AI_QUIPS = '0';
+  assert.equal(await q.make(REQ), null);
+  delete process.env.AI_QUIPS;
+  assert.equal(calls, 0);
+});
+
+await test('pide un comentario y no envía nombres ni datos de jugadores', async () => {
+  const q = new QuipMaker();
+  let body = '';
+  q.fetcher = (async (_u: unknown, init?: RequestInit) => { body = String(init?.body); return textReply('Tres mensajes al ex y los demás borrando el historial.')(); }) as typeof fetch;
+  assert.equal(await q.make(REQ), 'Tres mensajes al ex y los demás borrando el historial.');
+  assert.ok(body.includes('3 de 5 personas'));
+  assert.ok(!/\bpid\b|nombre del jugador/i.test(body));
+});
+
+await test('un error o una respuesta inválida devuelven null sin romper', async () => {
+  const q = new QuipMaker();
+  q.fetcher = (async () => new Response('x', { status: 500 })) as typeof fetch;
+  assert.equal(await q.make(REQ), null);
+  q.fetcher = textReply('ok') as typeof fetch;
+  assert.equal(await q.make(REQ), null, 'frase demasiado corta');
+});
+
+await test('si el modelo principal falla, prueba el de respaldo; si fallan los dos, hace una pausa', async () => {
+  delete process.env.GEMINI_QUIP_MODEL;
+  process.env.GEMINI_MODEL = 'modelo-de-respaldo';
+  const q = new QuipMaker();
+  const urls: string[] = [];
+  q.fetcher = (async (u: unknown) => {
+    urls.push(String(u));
+    return /gemini-3\.5-flash/.test(String(u)) ? new Response('RESOURCE_EXHAUSTED', { status: 429 }) : textReply('Tres mensajes al ex y los demás borrando el historial.')();
+  }) as typeof fetch;
+  assert.equal(await q.make(REQ), 'Tres mensajes al ex y los demás borrando el historial.');
+  assert.equal(urls.length, 2, 'primero el principal (falló) y luego el de respaldo');
+  // los dos saturados: pausa de un minuto y no insiste
+  const q2 = new QuipMaker();
+  let calls = 0;
+  q2.fetcher = (async () => { calls++; return new Response('UNAVAILABLE', { status: 503 }); }) as typeof fetch;
+  assert.equal(await q2.make(REQ), null);
+  assert.equal(await q2.make(REQ), null);
+  assert.equal(calls, 2, 'una ronda con los dos modelos y ninguna más durante la pausa');
+  delete process.env.GEMINI_MODEL;
+});
+
+await test('un SKIP no gasta el modelo de respaldo', async () => {
+  process.env.GEMINI_MODEL = 'modelo-de-respaldo';
+  const q = new QuipMaker();
+  let calls = 0;
+  q.fetcher = (async () => { calls++; return textReply('SKIP')(); }) as typeof fetch;
+  assert.equal(await q.make(REQ), null);
+  assert.equal(calls, 1);
+  delete process.env.GEMINI_MODEL;
+});
+
+await test('límite por minuto y pausa tras agotar la cuota', async () => {
+  const q = new QuipMaker();
+  let calls = 0;
+  q.fetcher = (async () => { calls++; return textReply('Una reacción larga y simpática sobre la ronda.')(); }) as typeof fetch;
+  for (let i = 0; i < 12; i++) await q.make(REQ);
+  assert.equal(calls, 8, 'como máximo 8 por minuto');
+  const q2 = new QuipMaker();
+  let c2 = 0;
+  q2.fetcher = (async () => { c2++; return new Response('RESOURCE_EXHAUSTED', { status: 429 }); }) as typeof fetch;
+  await q2.make(REQ);
+  await q2.make(REQ);
+  assert.equal(c2, 2, 'tras un 429 prueba los dos modelos una vez y deja de pedir un rato');
+});
+
+await test('los comentarios escritos a mano cubren cada situación y mencionan a quien corresponde', () => {
+  const ctxs: QuipCtx[] = [
+    { game: 'never', total: 4, drinkers: [] },
+    { game: 'never', total: 4, drinkers: ['Ana'] },
+    { game: 'never', total: 4, drinkers: ['Ana', 'Beto'] },
+    { game: 'never', total: 3, drinkers: ['Ana', 'Beto', 'Caro'] },
+    { game: 'likely', total: 4, drinkers: ['Ana'], votes: 4 },
+    { game: 'likely', total: 5, drinkers: ['Ana'], votes: 3 },
+    { game: 'likely', total: 5, drinkers: ['Ana', 'Beto'], votes: 2 },
+    { game: 'would', a: 2, b: 2, drinkers: [] },
+    { game: 'would', a: 4, b: 0, drinkers: [] },
+    { game: 'would', a: 4, b: 1, drinkers: ['Beto'] },
+    { game: 'truth', kind: 'dare', resolved: 'drink', name: 'Ana' },
+    { game: 'truth', kind: 'truth', resolved: 'done', name: 'Ana' },
+    { game: 'reflex', total: 3, early: ['Ana'], best: null, last: null },
+    { game: 'reflex', total: 3, early: [], best: { name: 'Ana', ms: 210 }, last: { name: 'Beto', ms: 480 } },
+    { game: 'reflex', total: 3, early: [], best: { name: 'Ana', ms: 350 }, last: { name: 'Beto', ms: 480 } },
+  ];
+  for (const c of ctxs) {
+    for (let i = 0; i < 6; i++) {
+      const q = curatedQuip(c);
+      assert.ok(q.length > 10 && q.length < 140, `longitud rara: ${q}`);
+      assert.ok(!/undefined|\[object/.test(q), q);
+    }
+  }
+  assert.match(curatedQuip({ game: 'never', total: 4, drinkers: ['Ana'] }), /Ana/);
+  assert.equal(joinNames(['Ana', 'Beto', 'Caro']), 'Ana, Beto y Caro');
 });
 
 console.log(`IA: ${n} pruebas correctas`);

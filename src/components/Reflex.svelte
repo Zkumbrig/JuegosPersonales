@@ -6,6 +6,7 @@
   import { vibrate } from '../lib/format';
   import Avatar from './Avatar.svelte';
   import Icon from './Icon.svelte';
+  import Quip from './Quip.svelte';
 
   const pa = $derived(net.room!.party);
   const isHost = $derived(!!net.me?.host);
@@ -59,6 +60,7 @@
         </ol>
         <p class="muted small">{soften('Bebe el más lento, el que no llegó y quien se adelanta.', pa.soft)}</p>
       </section>
+      {#if pa.quip}<Quip text={soften(pa.quip, pa.soft)} />{/if}
     {:else}
       <section class="panel intro">
         <p class="display lead">Duelo de reflejos</p>

@@ -12,11 +12,14 @@ function save(key: string, value: string) {
   try { localStorage.setItem(key, value); } catch { /* modo privado */ }
 }
 
+function randomPid(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16)); // randomUUID no existe en http de la LAN
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+}
 function makePid(): string {
   const stored = load('rc_pid');
   if (stored.length >= 8) return stored;
-  const bytes = crypto.getRandomValues(new Uint8Array(16)); // randomUUID no existe en http de la LAN
-  const pid = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  const pid = randomPid();
   save('rc_pid', pid);
   return pid;
 }
@@ -66,6 +69,21 @@ class Net {
   left(ms: number | null | undefined): number | null {
     if (ms == null) return null;
     return Math.max(0, ms - (this.now - this.stamp));
+  }
+
+  /** Tras iniciar sesión con el correo: este dispositivo pasa a usar el perfil de la cuenta (así se recupera el progreso). */
+  adoptIdentity(pid: string, name: string) {
+    this.pid = pid;
+    save('rc_pid', pid);
+    this.name = name;
+    save('rc_name', name);
+    save('rc_room', '');
+    this.profile = null;
+  }
+
+  /** Al cerrar sesión: el dispositivo vuelve a ser un invitado nuevo (no se queda con el perfil de la cuenta). */
+  newIdentity() {
+    this.adoptIdentity(randomPid(), '');
   }
 
   join(name: string, code?: string) {

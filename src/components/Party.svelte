@@ -10,6 +10,8 @@
   import Flames from './Flames.svelte';
   import PlayingCard from './PlayingCard.svelte';
   import Reflex from './Reflex.svelte';
+  import Quip from './Quip.svelte';
+  import Ambient from './Ambient.svelte';
 
   const pa = $derived(net.room!.party);
   const game = $derived(net.room!.game as PartyGame);
@@ -53,7 +55,16 @@
   const wouldA = $derived(votes.get('A') ?? []);
   const wouldB = $derived(votes.get('B') ?? []);
   const wouldTotal = $derived(Math.max(1, wouldA.length + wouldB.length));
+
+  // Color de ambiente: un tono suave propio de cada juego y, al revelar, una ola de color según el resultado
+  // (coral si alguien bebe, verde azulado si se salva la mesa). Solo opacidad y escala: no pesa.
+  const TONES: Record<string, string> = { never: 'var(--pop)', likely: 'var(--gold)', would: 'var(--felt-hi)', truth: 'var(--back-1)', kings: 'var(--gold-lo)' };
+  const tone = $derived(TONES[game] ?? 'transparent');
+  const revealed = $derived(game !== 'reflex' && (pa.phase === 'reveal' || pa.phase === 'done'));
+  const washColor = $derived(pa.drinkers.length ? 'var(--pop)' : 'var(--felt-hi)');
 </script>
+
+<Ambient {tone} toneKey={game} washColor={revealed ? washColor : null} washKey={`${game}:${pa.round}:${pa.phase}`} strong={iDrink} />
 
 <div class="wrap">
   <header class="topbar">
@@ -231,6 +242,10 @@
       {/if}
     {/if}
 
+    {#if pa.quip && (pa.phase === 'reveal' || pa.phase === 'done')}
+      <Quip text={t(pa.quip)} />
+    {/if}
+
     <!-- ===================== Controles comunes ===================== -->
     <div class="controls">
       {#if pa.phase === 'idle'}
@@ -284,7 +299,7 @@
 <style>
   .wrap { display: flex; flex-direction: column; gap: 12px; }
   .topbar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
-  .back { justify-self: start; display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--gold-hi); padding: 6px 2px; }
+  .back { justify-self: start; display: inline-flex; align-items: center; gap: 4px; font-size: 0.78rem; color: var(--gold-hi); min-height: 44px; padding: 6px 10px 6px 2px; }
   .back.ghost { color: var(--muted); }
   .title { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-weight: 700; font-size: 0.82rem; color: var(--gold-hi); text-align: center; }
   .lvl { justify-self: end; font-size: 0.9rem; }
@@ -363,5 +378,17 @@
 
   .controls { display: flex; flex-direction: column; gap: 8px; }
   .center { text-align: center; margin: 0; }
-  .btn.small { min-height: 36px; font-size: 0.7rem; align-self: center; }
+  .btn.small { min-height: 44px; font-size: 0.7rem; align-self: center; }
+
+  /* Móviles bajos: se aprieta el espacio para que pregunta, respuesta y botón quepan sin deslizar. */
+  @media (max-height: 740px) {
+    .wrap { gap: 8px; }
+    .kicker { margin-bottom: 8px; padding-bottom: 8px; }
+    .verdict { padding: 10px; }
+    .intro { padding: 16px 14px; }
+    .big { min-height: 56px; }
+    /* El botón de avanzar se queda pegado abajo: siempre a la vista aunque el resultado sea largo. */
+    .controls { position: sticky; bottom: calc(8px + var(--safe-b)); z-index: 3; }
+    .controls :global(.btn) { box-shadow: 0 4px 0 #b36a2c, 0 10px 22px rgba(0, 0, 0, 0.45); }
+  }
 </style>

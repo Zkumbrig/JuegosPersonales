@@ -121,7 +121,7 @@
           <div class="stepper" aria-label="Bots">
             <button class="st" aria-label="Quitar un bot" disabled={opts.bots <= 0} onclick={() => patch({ bots: opts.bots - 1 })}><Icon name="minus" size={14} /></button>
             <span class="num">{opts.bots} {opts.bots === 1 ? 'bot' : 'bots'}</span>
-            <button class="st" aria-label="Añadir un bot" disabled={opts.bots >= maxBots} onclick={() => patch({ bots: opts.bots + 1 })}><Icon name="sparkle" size={14} /></button>
+            <button class="st" aria-label="Añadir un bot" disabled={opts.bots >= maxBots} onclick={() => patch({ bots: opts.bots + 1 })}><Icon name="plus" size={16} /></button>
           </div>
         {/if}
       </div>
@@ -177,7 +177,7 @@
       </div>
       <!-- El dado se lanza sobre el tablero y luego se queda en la tarjeta de turno -->
       <div class="tossed essential-motion" class:on={lv.dice.show} class:ta={lv.dice.id % 2 === 0} class:tb={lv.dice.id % 2 === 1} aria-hidden="true">
-        <LudoDie value={lv.dice.value} rollId={lv.dice.id} rolling={lv.dice.rolling} color={diceColor} size={104} />
+        <LudoDie value={lv.dice.value} rollId={lv.dice.id} rolling={lv.dice.rolling} color={diceColor} size="min(96px, 17cqw)" />
         {#if lv.dice.show && !lv.dice.rolling && lv.dice.value === 6}<span class="six6 display">¡Seis!</span>{/if}
       </div>
       {#if board >= 6 && iSit}
@@ -193,7 +193,7 @@
           rolling={lv.dice.rolling}
           color={diceColor}
           active={canRoll}
-          size={74}
+          size="min(70px, 16vw)"
           onroll={roll}
         />
         <div class="tx">
@@ -272,6 +272,8 @@
   .setup { display: grid; gap: 12px; animation: fadeUp 0.3s ease both; }
   .setup header { text-align: center; }
   .setup header h2 { font-size: 1.7rem; }
+  /* Móviles bajos: la pestaña ya dice "Ludo", así que se quita el título y se aprieta el espacio. */
+  @media (max-height: 640px) { .setup header { display: none; } .setup { gap: 8px; } }
   .boards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .bd { display: grid; justify-items: center; gap: 2px; padding: 10px 6px 8px; border-radius: 16px; transition: border-color 0.2s, background 0.2s, transform 0.12s; }
   .bd:disabled:not(.on) { opacity: 0.45; }
@@ -284,7 +286,8 @@
   .box h3 { font-family: var(--font-display); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; color: var(--gold-hi); }
   .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   .stepper { display: inline-flex; align-items: center; gap: 8px; font-size: 0.82rem; }
-  .st { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--gold-lo); color: var(--gold-hi); display: grid; place-items: center; }
+  @media (max-height: 740px) { .go { position: sticky; bottom: calc(8px + var(--safe-b)); z-index: 3; } }
+  .st { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--gold-lo); color: var(--gold-hi); display: grid; place-items: center; }
   .st:disabled { opacity: 0.35; }
   .roster { display: grid; gap: 6px; }
   .roster li { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 12px; background: rgba(0, 0, 0, 0.28); border-left: 4px solid var(--c); }
@@ -300,8 +303,8 @@
   /* ---------- Partida ---------- */
   .play { display: grid; gap: 10px; animation: fadeUp 0.3s ease both; }
   .watch { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); font-size: 0.82rem; color: var(--muted); }
-  .stage { position: relative; width: 100%; max-width: min(100%, 78dvh); margin: 0 auto; }
-  .tossed { position: absolute; left: 50%; top: 50%; margin: -65px 0 0 -65px; z-index: 3; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0.25s; }
+  .stage { position: relative; width: 100%; max-width: min(100%, 78dvh); margin: 0 auto; container-type: inline-size; }
+  .tossed { position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 3; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.25s, visibility 0.25s; }
   .tossed.on { opacity: 1; visibility: visible; }
   .tossed.on.ta { animation: throw-a 1.1s cubic-bezier(0.25, 0.7, 0.3, 1); }
   .tossed.on.tb { animation: throw-b 1.1s cubic-bezier(0.25, 0.7, 0.3, 1); }
@@ -315,6 +318,12 @@
   .zoomer.zoom :global(.table) { transform: scale(1.75); }
   .zbtn { position: absolute; right: 4px; bottom: 4px; z-index: 2; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--gold-hi); background: rgba(10, 8, 7, 0.8); border: 1px solid var(--gold-lo); }
   .zbtn.on { background: var(--gold-grad); color: var(--on-accent); border-color: transparent; }
+  /* Móviles bajos en vertical: el tablero se encoge lo justo para que tablero y dado quepan juntos (mínimo 280 px); el registro de jugadas se oculta. */
+  @media (max-width: 899px) and (max-height: 740px) {
+    .stage { max-width: min(100%, max(280px, calc(100dvh - 285px))); }
+    .log { display: none; }
+    .play { gap: 8px; }
+  }
   .side { display: grid; gap: 10px; align-content: start; }
   .turn { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; padding: 10px 14px 12px; border-color: color-mix(in srgb, var(--tc) 55%, var(--line)); position: relative; }
   .turn.mine { background: linear-gradient(180deg, color-mix(in srgb, var(--tc) 22%, var(--panel)), var(--panel)); }

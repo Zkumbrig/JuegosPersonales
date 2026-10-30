@@ -190,6 +190,7 @@ export interface PartyPublic {
   card: Card | null; // rey de copas
   rule: string | null;
   kings: number;
+  quip: string | null; // comentario con gracia sobre lo que acaba de pasar (solo al revelar)
   tally: Record<string, number>; // tragos de la noche
 }
 

@@ -8,7 +8,7 @@
     "build": "vite build",
     "start": "tsx server/index.ts",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "tsx server/selftest.ts && tsx server/robusttest.ts && tsx server/ludotest.ts && tsx server/aitest.ts && tsx server/reviewstest.ts && tsx server/profilestest.ts",
+    "test": "tsx server/selftest.ts && tsx server/robusttest.ts && tsx server/ludotest.ts && tsx server/aitest.ts && tsx server/reviewstest.ts && tsx server/profilestest.ts && tsx server/telemetrytest.ts && tsx server/authtest.ts",
     "icons": "node scripts/make-icons.mjs",
     "test:robust": "tsx server/robusttest.ts"
   },

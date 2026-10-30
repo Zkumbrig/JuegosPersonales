@@ -76,7 +76,7 @@
   header { display: flex; align-items: center; gap: 12px; }
   header div { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
   h2 { margin: 0; font-size: 1.1rem; font-weight: 800; color: var(--gold-hi); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--gold-hi); flex: none; }
+  .x { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--gold-hi); flex: none; }
   .stats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .stats li { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; border-radius: 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); }
   .stats b { font-family: var(--font-display); font-size: 1rem; color: var(--gold-hi); }

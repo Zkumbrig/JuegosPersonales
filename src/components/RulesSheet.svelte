@@ -52,7 +52,7 @@
     width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--gold-grad); color: var(--on-accent);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55), 0 6px 14px rgb(var(--accent-rgb) / 0.22);
   }
-  .x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--gold-hi); flex: none; }
+  .x { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--gold-hi); flex: none; }
   .lead { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 0.95rem; line-height: 1.4; }
   .points { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
   .points li { position: relative; padding-left: 20px; font-size: 0.9rem; line-height: 1.5; color: var(--text); }

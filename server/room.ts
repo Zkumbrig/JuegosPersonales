@@ -9,6 +9,7 @@ import { spin } from './slots';
 import { isPosInt } from './util';
 import { profiles } from './profiles';
 import { cleanComment, reviews } from './reviews';
+import { telemetry, type RoundResult } from './telemetry';
 import {
   ACHIEVEMENTS, GAMES, type CasinoGame, LUDO_GAME, MIN_REBUY_BELOW, PARTY_GAMES, REACTIONS, START_CHIPS, isPartyId,
   type ClientMsg, type FeedItem, type GameId, type PartyLevel, type ReactionKind, type RoomPublic, type RoomStats, type ServerMsg,
@@ -77,13 +78,17 @@ export class Room {
   readonly lu = new Ludo(this);
   readonly fp = new FreePoker(this);
 
-  constructor(public code: string, private onDestroy: (code: string) => void) {}
+  constructor(public code: string, private onDestroy: (code: string) => void) {
+    telemetry.sessionOpen(code);
+  }
 
   // ---------- Conexión ----------
   attach(p: Player, ws: WebSocket) {
     if (p.ws && p.ws !== ws) p.ws.close(4000, 'replaced');
     p.ws = ws;
     clearTimeout(this.reaper);
+    telemetry.visit(p.id);
+    telemetry.players(this.code, [...this.players.values()].filter((q) => q.ws).length);
     this.lu.onConnect(p.id);
     this.watchHost();
     this.broadcast();
@@ -119,6 +124,7 @@ export class Room {
   }
 
   destroy() {
+    telemetry.sessionClose(this.code);
     clearTimeout(this.reaper);
     clearTimeout(this.hostTimer);
     this.bj.dispose();
@@ -324,8 +330,18 @@ export class Room {
   }
 
   // ---------- Estadísticas de la noche y reacciones ----------
-  noteRound() {
+  /**
+   * Una ronda terminó. `result` aporta el detalle para la medición (puestos, puntos…); si no se da, se guarda
+   * solo que se jugó este juego con las personas conectadas.
+   */
+  noteRound(result?: Partial<RoundResult>) {
     this.rounds++;
+    telemetry.round(this.code, {
+      game: result?.game ?? this.game,
+      board: result?.board,
+      durationS: result?.durationS,
+      players: result?.players ?? [...this.players.values()].filter((q) => q.ws).map((q) => ({ pid: q.id, name: q.name })),
+    });
     for (const p of this.players.values()) {
       if (!p.ws) continue;
       profiles.bump(p.id, 'rounds');

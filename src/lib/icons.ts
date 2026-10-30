@@ -57,6 +57,7 @@ export const ICONS: Record<string, string> = {
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
   minus: '<path d="M6 12h12"/>',
+  plus: '<path d="M6 12h12M12 6v12"/>',
   skip: '<path class="d" d="M5 5.5l9 6.5-9 6.5z"/><path d="M18.5 5v14"/>',
   trophy:
     '<path class="d" d="M8 4h8v5.2a4 4 0 0 1-8 0V4z"/><path d="M8 5.5H5.2A2.7 2.7 0 0 0 8 10M16 5.5h2.8A2.7 2.7 0 0 1 16 10M12 13.2V17M8.5 20.5h7M10 17h4"/>',

@@ -1,10 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomBytes } from 'node:crypto';
 import { ACHIEVEMENTS, type ProfilePublic } from '../shared/protocol';
 import type { SqlDb } from './db';
 
 /**
- * Perfiles anónimos: se identifican por el `pid` que cada navegador guarda, sin cuentas ni correos.
+ * Perfiles: se identifican por el `pid` que cada navegador guarda (anónimo). Quien inicia sesión con su correo
+ * vincula su perfil a su cuenta (`linkAccount`) y así lo recupera desde cualquier dispositivo.
  * Acumulan estadísticas y logros de todas las mesas en las que juega esa persona.
  *
  * Funcionamiento: los perfiles viven en memoria (lectura y escritura síncronas, rápidas). Si hay base de datos
@@ -105,6 +107,45 @@ export class ProfileStore {
       this.loaded.add(pid); // existía (cargado) o es nuevo (se creará al guardar)
     } catch (e) {
       console.error('[profiles] no se pudo cargar un perfil; este jugador no se guardará en la base de datos en esta sesión:', (e as Error).message);
+    }
+  }
+
+  /**
+   * Vincula una cuenta (usuario de Supabase Auth) con un perfil y devuelve el `pid` que debe usar el navegador.
+   * - Si la cuenta ya tiene perfil (otro dispositivo, o ya lo había vinculado), se devuelve ese: así el progreso se recupera.
+   * - Si es una cuenta nueva, se queda con el perfil anónimo de este dispositivo (se conservan sus logros y estadísticas).
+   * - Si el perfil de este dispositivo ya pertenece a otra cuenta, la cuenta nueva empieza con un perfil propio.
+   * Devuelve null si no hay base de datos o falla (el inicio de sesión no puede completarse sin ella).
+   */
+  async linkAccount(pid: string, user: { id: string }): Promise<{ pid: string; name: string } | null> {
+    const db = this.db;
+    if (!db) return null;
+    const newPid = () => randomBytes(16).toString('hex');
+    try {
+      const have = await db.query('select pid, display_name from profiles where user_id = $1 and deleted_at is null', [user.id]);
+      const row = have.rows[0];
+      if (row) {
+        let mine = row.pid ? String(row.pid) : null;
+        if (!mine) {
+          mine = newPid();
+          await db.query('update profiles set pid = $1 where user_id = $2', [mine, user.id]);
+        }
+        return { pid: mine, name: String(row.display_name) };
+      }
+      const name = (this.map.get(pid)?.name ?? 'Jugador').slice(0, 16) || 'Jugador';
+      const claimed = await db.query(
+        `insert into profiles (pid, display_name, user_id) values ($1, $2, $3)
+         on conflict (pid) do update set user_id = excluded.user_id where profiles.user_id is null
+         returning pid`,
+        [pid, name, user.id],
+      );
+      if (claimed.rows[0]) return { pid, name };
+      const fresh = newPid();
+      await db.query('insert into profiles (pid, display_name, user_id) values ($1, $2, $3)', [fresh, 'Jugador', user.id]);
+      return { pid: fresh, name: 'Jugador' };
+    } catch (e) {
+      console.error('[profiles] no se pudo vincular la cuenta:', (e as Error).message);
+      return null;
     }
   }
 

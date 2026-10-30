@@ -223,4 +223,137 @@ export class AiContent {
   }
 }
 
+// ---------- Comentarios con gracia sobre la pregunta de la ronda ----------
+// Se pide UNA frase corta por ronda revelada. Solo viaja el texto de la pregunta y un resumen sin nombres
+// ("3 de 5 dijeron que sí"): nunca nombres ni datos de los jugadores. Tiene límites propios para cuidar la cuota.
+const QUIP_PER_MIN = 8;
+const QUIP_PER_DAY = 250;
+const QUIP_TIMEOUT_MS = 6_000;
+
+export interface QuipRequest {
+  game: 'never' | 'likely' | 'would' | 'truth';
+  prompt: string;
+  /** Resumen del resultado, sin nombres. Ej: "3 de 5 personas dijeron que sí lo han hecho". */
+  outcome: string;
+  level: Level;
+  /** ¿Alguien bebe en esta ronda? Sirve para descartar comentarios que contradicen el resultado. */
+  anyDrink?: boolean;
+}
+
+/** Arranques y muletillas que delatan un comentario de relleno. */
+const FILLER = /^(parece que|veo que|se nota que|qué (grupo|mesa|bonito|lindo|valiente)|interesante|vaya|bueno|bien|claro|ah)\b|\b(todos a beber|a beber ahora|increíble|wow|sin duda alguna|en conclusión)\b/i;
+const MAX_WORDS = 16;
+
+/**
+ * Una frase de comentario válida: corta, sin emojis ni temas vetados, sin muletillas y, si se pasa la petición,
+ * que hable de la pregunta (comparte alguna palabra con ella) y no contradiga el resultado. Devuelve null si no sirve.
+ */
+export function cleanQuip(raw: unknown, req?: QuipRequest): string | null {
+  if (typeof raw !== 'string') return null;
+  const t = raw.trim().replace(/^["“«'\s]+|["”»'\s]+$/g, '').replace(/\s+/g, ' ');
+  if (/^skip\b/i.test(t)) return null; // la IA decidió que no había nada gracioso: habla la lista escrita a mano
+  if (t.length < 12 || t.length > 150 || t.split(' ').length > MAX_WORDS) return null;
+  if (BLOCK.test(t) || /[{}<>[\]]/.test(t) || /\p{Extended_Pictographic}/u.test(t) || FILLER.test(t)) return null;
+  if (req) {
+    const stems = sig(req.prompt);
+    if (stems.size >= 2) {
+      const mine = sig(t);
+      let shared = 0;
+      for (const w of mine) if (stems.has(w)) shared++;
+      if (shared === 0) return null; // no habla de la pregunta
+    }
+    if (req.anyDrink === false && /\b(beb(e|en|an|er|emos|iendo)|tragos?)\b/i.test(t)) return null;
+    if (req.anyDrink === true && /\b(nadie (ha|lo|bebe|confiesa)|cero culpables|todos son santos)\b/i.test(t)) return null;
+  }
+  return t;
+}
+
+const GAME_LABEL: Record<QuipRequest['game'], string> = {
+  never: 'Yo nunca (quien lo ha hecho, bebe)',
+  likely: '¿Quién es más probable que…? (el más votado bebe)',
+  would: 'Preferirías… (la minoría bebe)',
+  truth: 'Verdad o reto',
+};
+
+export class QuipMaker {
+  private stamps: number[] = [];
+  private day = '';
+  private today = 0;
+  private retryAt = 0;
+  private recent: Set<string>[] = []; // huellas de los últimos comentarios: no se repite la misma idea
+  fetcher: typeof fetch = (...a) => fetch(...a);
+
+  get enabled() {
+    return !!process.env.GEMINI_API_KEY && process.env.AI_CONTENT !== '0' && process.env.AI_QUIPS !== '0';
+  }
+
+  private fresh(q: string): boolean {
+    const s = sig(q);
+    if (this.recent.some((o) => similar(o, s))) return false;
+    this.recent.push(s);
+    if (this.recent.length > 40) this.recent.shift();
+    return true;
+  }
+
+  private allow(): boolean {
+    const now = Date.now();
+    const day = new Date(now).toISOString().slice(0, 10);
+    if (day !== this.day) { this.day = day; this.today = 0; }
+    this.stamps = this.stamps.filter((t) => now - t < 60_000);
+    if (now < this.retryAt || this.stamps.length >= QUIP_PER_MIN || this.today >= QUIP_PER_DAY) return false;
+    this.stamps.push(now);
+    this.today++;
+    return true;
+  }
+
+  /** Devuelve un comentario de la IA o null (sin clave, sin cuota, error o frase no válida): entonces vale el escrito a mano. */
+  async make(req: QuipRequest): Promise<string | null> {
+    if (!this.enabled || !this.allow()) return null;
+    const prompt = [
+      'Eres el presentador de una noche de juegos entre amigos adultos (+18): sarcástico, cariñoso y rápido, en español latino neutro.',
+      `Juego: ${GAME_LABEL[req.game]}.`,
+      `Pregunta o reto: "${req.prompt}"`,
+      `Resultado: ${req.outcome}.`,
+      'Escribe UNA sola frase de reacción graciosa (máximo 14 palabras). Tiene que reírse de algo ESPECÍFICO de la pregunta (un objeto, una situación, un detalle concreto) y usar el resultado.',
+      'Reglas: sin inventar nada que no esté en la pregunta o el resultado; sin nombres propios, sin emojis, sin insultos ni burlas al cuerpo o a la identidad de nadie, sin marcar género, nada sexual explícito. Ironía seca, como un amigo que se ríe contigo, no de ti. No expliques el chiste.',
+      'Nunca empieces con "Parece que", "Veo que", "Qué grupo" ni "Interesante". Evita frases que servirían para cualquier pregunta ("todos tenemos secretos").',
+      'Ejemplos BUENOS (pregunta → resultado → frase):',
+      '- "Yo nunca he dejado morir una planta." → 3 de 5 sí → "Tres verdugos de plantas confesos; el balcón pide abogado."',
+      '- "Yo nunca he buscado mi nombre en internet." → 4 de 5 sí → "Cuatro se googlean y el quinto miente con mucha seguridad."',
+      '- "Tener hipo para siempre o estornudar sin parar" → 2 y 2 → "Empate: la mitad prefiere sonar a motor y la otra a gato."',
+      'Ejemplos MALOS (no hagas esto): "Qué grupo tan talentoso." · "Parece que alguien recordó los lunes." · "Todos a beber ahora mismo." · cualquier frase sin relación con la pregunta.',
+      'Si no se te ocurre algo realmente gracioso y específico, responde exactamente: SKIP',
+      'Responde solo con la frase (o SKIP).',
+    ].join('\n');
+    // Primero el modelo que mejor escribe humor; si está saturado o sin cuota, el de siempre (más barato y con más margen).
+    const models = [process.env.GEMINI_QUIP_MODEL || 'gemini-3.5-flash', process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite'].filter((m, i, a) => a.indexOf(m) === i);
+    let lastError: Error | null = null;
+    for (const model of models) {
+      const generationConfig: Record<string, unknown> = { temperature: 1, maxOutputTokens: 80 };
+      if (/2\.5/.test(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      else if (/gemini-3/.test(model)) generationConfig.thinkingConfig = { thinkingLevel: 'minimal' };
+      try {
+        const res = await this.fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': process.env.GEMINI_API_KEY! },
+          body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig }),
+          signal: AbortSignal.timeout(QUIP_TIMEOUT_MS),
+        });
+        if (!res.ok) throw new Error(`Gemini respondió ${res.status}`);
+        const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+        const q = cleanQuip(data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '', req);
+        return q && this.fresh(q) ? q : null; // una respuesta recibida (aunque sea SKIP) termina aquí: no se prueba otro modelo
+      } catch (e) {
+        lastError = e as Error; // error de red, saturación o cuota: se intenta con el siguiente modelo
+      }
+    }
+    const msg = String(lastError?.message ?? lastError?.name ?? '');
+    if (/429|quota|RESOURCE_EXHAUSTED/i.test(msg)) this.retryAt = Date.now() + COOLDOWN_QUOTA_MS;
+    else if (/\b50[0-4]\b|UNAVAILABLE|abort|timeout/i.test(msg)) this.retryAt = Date.now() + 60_000; // servicio saturado: un minuto de pausa
+    return null;
+  }
+}
+
+export const quipMaker = new QuipMaker();
+
 export const aiContent = new AiContent();

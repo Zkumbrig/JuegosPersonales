@@ -52,7 +52,7 @@
     <p class="label">{LABELS[hover || rating] || 'Toca las estrellas'}</p>
 
     <textarea bind:value={comment} maxlength="400" rows="3" placeholder="¿Algo que mejorarías? (opcional)" aria-label="Comentario"></textarea>
-    <p class="note muted">Tu opinión es privada: solo la lee el creador del juego.</p>
+    <p class="note muted">Tu opinión no se muestra a otros jugadores: nos llega solo a nosotros para mejorar el juego.</p>
 
     <button class="btn btn-gold" disabled={!rating || sent} onclick={send}>{sent ? 'Enviado' : 'Enviar valoración'}</button>
   </div>
@@ -63,7 +63,7 @@
   .sheet { width: min(100%, 460px); padding: 18px 18px calc(18px + var(--safe-b)); border-radius: 22px 22px 0 0; display: grid; gap: 10px; }
   header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
   h2 { margin: 0; font-size: 1.05rem; }
-  .x { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
+  .x { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); }
   .stars { display: flex; justify-content: center; gap: 6px; padding: 6px 0 0; }
   .star { padding: 2px; color: var(--line); transition: transform 0.12s, color 0.12s; }
   .star svg { fill: currentColor; stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; display: block; }

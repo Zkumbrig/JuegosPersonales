@@ -1,6 +1,7 @@
 import { rnd, shuffle } from './util';
 import type { Room, Player } from './room';
-import { aiContent, type AiKind } from './ai';
+import { aiContent, quipMaker, type AiKind, type QuipRequest } from './ai';
+import { curatedQuip, type QuipCtx } from './quips';
 import { DARES, KING_RULES, LIKELY, NEVER, TRUTHS, WOULD, type Item } from './content';
 import type { PartyGame, PartyLevel, PartyPublic, Suit } from '../shared/protocol';
 
@@ -31,6 +32,8 @@ export class Party {
   rule: string | null = null;
   card: { r: string; s: Suit } | null = null;
   kings = 0;
+  /** Comentario con gracia sobre lo que acaba de pasar (escrito a mano al instante; la IA puede mejorarlo después). */
+  quip: string | null = null;
   private answers = new Map<string, string>();
   private picks: Record<string, string> | null = null;
   private drinkers: string[] = [];
@@ -78,6 +81,7 @@ export class Party {
     this.rule = null;
     this.card = null;
     this.kings = 0;
+    this.quip = null;
     this.answers.clear();
     this.picks = null;
     this.drinkers = [];
@@ -85,6 +89,27 @@ export class Party {
     this.reaction.clear();
     this.kingsDeck = [];
     this.lastTarget = null;
+  }
+
+  private nameOf(id: string) {
+    return this.room.players.get(id)?.name ?? 'Alguien';
+  }
+
+  /**
+   * Fija el comentario de la ronda: el escrito a mano sale ya; si la IA está activa y contesta a tiempo
+   * (y la ronda sigue siendo la misma), lo sustituye por uno que habla de la pregunta concreta.
+   */
+  private remark(ctx: QuipCtx, ai?: QuipRequest) {
+    this.quip = curatedQuip(ctx);
+    if (!ai || !quipMaker.enabled) return;
+    const round = this.round;
+    const phase = this.phase;
+    const anyDrink = this.drinkers.length > 0 || this.resolved === 'drink';
+    void quipMaker.make({ ...ai, anyDrink }).then((q) => {
+      if (!q || this.round !== round || this.phase !== phase) return;
+      this.quip = q;
+      this.room.broadcast();
+    });
   }
 
   private connected(): string[] {
@@ -157,6 +182,7 @@ export class Party {
 
   private startSimple(g: 'never' | 'likely' | 'would') {
     this.round++;
+    this.quip = null;
     this.answers.clear();
     this.picks = null;
     this.drinkers = [];
@@ -202,6 +228,7 @@ export class Party {
     this.target = ids[(i + 1) % ids.length];
     this.lastTarget = this.target;
     this.round++;
+    this.quip = null;
     this.kind = null;
     this.prompt = null;
     this.resolved = null;
@@ -283,6 +310,11 @@ export class Party {
       if (value === 'drink') this.addTally([p.id]);
       this.room.noteRound();
       this.phase = 'done';
+      const kind = this.kind ?? 'truth';
+      this.remark(
+        { game: 'truth', kind, resolved: value, name: this.nameOf(p.id) },
+        this.prompt ? { game: 'truth', prompt: this.prompt, level: this.level, outcome: value === 'done' ? (kind === 'truth' ? 'la persona respondió con sinceridad' : 'la persona cumplió el reto') : (kind === 'truth' ? 'la persona prefirió beber antes que responder' : 'la persona prefirió beber antes que hacer el reto') } : undefined,
+      );
       this.room.broadcast();
       return;
     }
@@ -327,12 +359,38 @@ export class Party {
     this.addTally(this.drinkers);
     this.room.noteRound();
     this.phase = 'reveal';
+    this.reactTo(g, entries);
     this.room.broadcast();
+  }
+
+  /** Comentario de la mesa para la ronda recién revelada. */
+  private reactTo(g: string, entries: [string, string][]) {
+    const total = entries.length;
+    const names = this.drinkers.map((id) => this.nameOf(id));
+    const prompt = this.prompt ?? '';
+    if (g === 'never') {
+      this.remark({ game: 'never', total, drinkers: names }, { game: 'never', prompt, level: this.level, outcome: `${names.length} de ${total} personas dijeron que sí lo han hecho` });
+    } else if (g === 'likely') {
+      const votes = this.drinkers.length ? entries.filter(([, v]) => v === this.drinkers[0]).length : 0;
+      const tie = this.drinkers.length > 1;
+      this.remark(
+        { game: 'likely', total, drinkers: names, votes },
+        { game: 'likely', prompt, level: this.level, outcome: tie ? `hubo empate entre ${names.length} personas, con ${votes} votos de ${total} cada una` : `la persona más votada recibió ${votes} de ${total} votos` },
+      );
+    } else if (g === 'would' && this.options) {
+      const a = entries.filter(([, v]) => v === 'A').length;
+      const b = total - a;
+      this.remark(
+        { game: 'would', a, b, drinkers: names },
+        { game: 'would', prompt: `${this.options[0]} o ${this.options[1]}`, level: this.level, outcome: `${a} personas eligieron la primera opción y ${b} la segunda` },
+      );
+    }
   }
 
   // ---------- Duelo de reflejos ----------
   private startReflex() {
     this.round++;
+    this.quip = null;
     this.reaction.clear();
     this.times = null;
     this.drinkers = [];
@@ -389,6 +447,14 @@ export class Party {
     for (const r of rows) if (r.ms !== null) this.room.noteReflex(r.id, r.ms);
     this.room.noteRound();
     this.phase = 'reveal';
+    const timed = rows.filter((r) => r.ms !== null) as { id: string; ms: number }[];
+    this.remark({
+      game: 'reflex',
+      total: rows.length,
+      early: rows.filter((r) => r.early).map((r) => this.nameOf(r.id)),
+      best: timed[0] ? { name: this.nameOf(timed[0].id), ms: timed[0].ms } : null,
+      last: timed.length > 1 ? { name: this.nameOf(timed[timed.length - 1].id), ms: timed[timed.length - 1].ms } : null,
+    });
     this.room.broadcast();
   }
 
@@ -448,6 +514,7 @@ export class Party {
       card: this.card,
       rule: this.rule,
       kings: this.kings,
+      quip: this.phase === 'reveal' || this.phase === 'done' ? this.quip : null,
       tally: Object.fromEntries(this.tally),
     };
   }

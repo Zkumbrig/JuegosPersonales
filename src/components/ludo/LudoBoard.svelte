@@ -130,7 +130,8 @@
       const y = yards[s.arm]!;
       const full = s.id === meId ? 'Tú' : s.name;
       const name = [...full].length > cfg.chars ? `${[...full].slice(0, cfg.chars - 1).join('')}…` : full;
-      const w = 0.95 + [...name].length * cfg.font * 0.64 + 0.3;
+      // Ancho mínimo: siempre caben las 4 casillas de progreso (empiezan en 1.0 y miden 0.2 con paso 0.26), aunque el nombre sea corto.
+      const w = Math.max(0.95 + [...name].length * cfg.font * 0.64 + 0.3, 2.2);
       const h = 1.1;
       const d = Math.hypot(y.c.x, y.c.y) || 1;
       const ux = y.c.x / d;
@@ -306,10 +307,10 @@
             <text x={-pl.w / 2 + 0.52} y="0.03" class="pini" text-anchor="middle" dominant-baseline="central">{pl.initial}</text>
             <text x={-pl.w / 2 + 1.0} y="-0.17" class="pname" style:font-size="{pl.font}px" dominant-baseline="central">{pl.name}</text>
             {#if pl.rank}
-              <text x={-pl.w / 2 + 1.0} y="0.28" class="prank" dominant-baseline="central">{pl.rank}º lugar</text>
+              <text x={-pl.w / 2 + 1.0} y="0.28" class="prank" dominant-baseline="central">{pl.rank}º</text>
             {:else}
               {#each pl.pips as k, i (i)}
-                <rect x={-pl.w / 2 + 1.0 + i * 0.3} y="0.14" width="0.22" height="0.26" rx="0.07" class="pip pip{k}" />
+                <rect x={-pl.w / 2 + 1.0 + i * 0.26} y="0.14" width="0.2" height="0.26" rx="0.07" class="pip pip{k}" />
               {/each}
             {/if}
             {#if pl.off || pl.auto}<circle cx={pl.w / 2 - 0.2} cy={-pl.h / 2 + 0.2} r="0.14" class={pl.off ? 'dot off' : 'dot auto'} />{/if}

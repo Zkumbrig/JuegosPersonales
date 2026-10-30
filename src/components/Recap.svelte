@@ -85,7 +85,7 @@
   }
   header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
   h2 { margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--gold-hi); }
-  .x { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--gold-hi); flex: none; }
+  .x { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; color: var(--gold-hi); flex: none; }
   img { width: 100%; height: auto; border-radius: 16px; display: block; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); }
   .actions { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }
   .center { text-align: center; margin: 14px 0; line-height: 1.5; }
