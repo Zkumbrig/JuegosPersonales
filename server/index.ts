@@ -9,6 +9,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { Player, Room } from './room';
 import { loadRooms, saveRooms } from './persist';
 import { profiles } from './profiles';
+import { getDb } from './db';
 import { renderAdmin, reviews } from './reviews';
 import { timingSafeEqual } from 'node:crypto';
 import { makeCode, rnd } from './util';
@@ -106,8 +107,9 @@ const rooms = new Map<string, Room>();
 for (const r of loadRooms(DATA_FILE, (c) => rooms.delete(c))) rooms.set(r.code, r);
 if (rooms.size) console.log(`Recuperadas ${rooms.size} mesa(s) de la última copia`);
 profiles.init(DATA_FILE.replace(/\.json$/, '') + '.profiles.json');
+await profiles.attachDb(await getDb()); // con Supabase, los perfiles y logros se guardan allí
 await reviews.init(DATA_FILE.replace(/\.json$/, '') + '.reviews.json');
-const persistTimer = setInterval(() => { saveRooms(DATA_FILE, rooms.values()); profiles.save(); }, PERSIST_MS);
+const persistTimer = setInterval(() => { saveRooms(DATA_FILE, rooms.values()); void profiles.save(); }, PERSIST_MS);
 persistTimer.unref();
 
 // ---------- Límites por IP ----------
@@ -168,7 +170,7 @@ wss.on('connection', (ws, req) => {
   let dropsSince = Date.now();
   ws.on('pong', () => (alive = true));
 
-  ws.on('message', (raw) => {
+  ws.on('message', async (raw) => {
     try {
       if (!bucket.take()) {
         if (Date.now() - dropsSince > 10_000) { drops = 0; dropsSince = Date.now(); }
@@ -186,6 +188,10 @@ wss.on('connection', (ws, req) => {
         if (!name) return send(ws, { t: 'err', msg: 'Escribe tu nombre.' });
         if (pid.length < 8 || pid.length > 64) return;
         if (joinBlocked(ip)) return send(ws, { t: 'err', msg: 'Demasiados intentos. Espera unos minutos.' });
+        if (!m.screen) {
+          await profiles.hydrate(pid); // trae su historial de la base de datos antes de sentarlo
+          if (room || screenRoom) return; // otra unión terminó mientras esperábamos
+        }
 
         if (m.screen) {
           // Pantalla compartida: solo mira. Una pantalla ya conocida puede volver aunque la mesa esté cerrada.
@@ -259,9 +265,9 @@ wss.on('connection', (ws, req) => {
 });
 
 // ---------- Apagado limpio: guarda las mesas para recuperarlas al volver ----------
-function shutdown() {
+async function shutdown() {
   saveRooms(DATA_FILE, rooms.values());
-  profiles.save();
+  await Promise.race([profiles.save(), new Promise((r) => setTimeout(r, 4000))]); // con base de datos, escribe lo pendiente
   process.exit(0);
 }
 process.on('SIGTERM', shutdown);

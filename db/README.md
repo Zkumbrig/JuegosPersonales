@@ -12,6 +12,12 @@ Esquema de Royale Club en Postgres. Las migraciones están en [`migrations/`](mi
 4. En Render (*Environment*) añade `DATABASE_URL` con esa cadena (con tu contraseña) y `ADMIN_KEY`. En local, ponlas en `.env`.
 5. Al arrancar, el servidor comprueba que la tabla `reviews` existe; si no, lo dice en el log y usa un archivo local.
 
+## Qué usa ya la base de datos
+
+- **Perfiles y logros** (`profiles`, `achievements_unlocked`): se cargan al entrar cada jugador y se guardan en segundo plano (cada 10 s y al apagar). Si es la primera vez y la tabla está vacía, se importa una sola vez el archivo local de perfiles.
+- **Reseñas** (`reviews`).
+- El resto de tablas está listo para cuando se usen. Sin `DATABASE_URL`, o si Supabase no responde, el servidor sigue con archivos locales.
+
 ## Qué hay
 
 | Tabla | Para qué |

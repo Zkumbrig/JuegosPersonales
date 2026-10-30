@@ -9,6 +9,7 @@ import nodeFs from 'node:fs';
 nodeFs.rmSync(process.env.DATA_FILE, { force: true }); // cada autoprueba empieza limpia
 nodeFs.rmSync(process.env.DATA_FILE.replace(/\.json$/, '') + '.profiles.json', { force: true });
 
+process.env.DATABASE_URL = ''; // las pruebas nunca tocan la base de datos real
 process.env.POKER = '1'; // estas pruebas ejercitan el póker y las tragaperras, que por defecto están ocultos
 process.env.SLOTS = '1';
 import assert from 'node:assert/strict';

@@ -1,13 +1,4 @@
 -- Royale Club · esquema inicial (Supabase / Postgres)
---
--- Principios:
---  * La identidad de las cuentas la lleva Supabase Auth (auth.users). Aquí NO hay tablas de contraseñas ni sesiones.
---  * Hoy se juega con un identificador anónimo por dispositivo (pid). Un perfil puede existir solo con pid y, el día que
---    la persona cree cuenta, se enlaza con user_id sin perder su historial.
---  * Todas las tablas tienen RLS activado SIN políticas: la API pública de Supabase (clave anon) no puede leer ni escribir.
---    Solo el servidor (conexión directa con DATABASE_URL, rol privilegiado) accede. Si algún día el cliente necesita leer
---    algo, se añade una política concreta por tabla; nunca se desactiva RLS.
---  * Fechas en UTC (timestamptz). Lo que contiene datos personales lleva deleted_at (borrado suave).
 
 -- ---------- utilidades ----------
 create or replace function set_updated_at() returns trigger
