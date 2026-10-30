@@ -25,17 +25,3 @@ services:
     #   name: royale-data
     #   mountPath: /data
     #   sizeGB: 1
-
-  # ---- Ludo Club (ludo/): servidor + cliente en un solo contenedor ----
-  # Mismas limitaciones del plan gratuito que arriba: se duerme a los 15 min y las salas viven en memoria.
-  - type: web
-    name: ludo-club
-    runtime: docker
-    plan: free
-    numInstances: 1
-    dockerfilePath: ./ludo/Dockerfile
-    dockerContext: ./ludo
-    healthCheckPath: /api/health
-    envVars:
-      - key: TRUST_PROXY
-        value: "1"

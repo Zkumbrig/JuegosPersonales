@@ -25,7 +25,7 @@ las mesas viven en la memoria de un único servidor). Sí sirven Render, Railway
    cada 4 minutos, y eso cuenta como tráfico entrante (un ping a `localhost` no contaría). Se desactiva con
    `KEEPALIVE=0` y el intervalo se cambia con `KEEPALIVE_MS`. Cuidado con las horas: el plan gratuito da **750 h al mes
    por cuenta** y una app encendida todo el mes gasta unas 744, así que **solo una app puede estar siempre despierta**.
-   Si hay otra en el mismo Blueprint (por ejemplo `ludo-club`), se suspende al agotarse las horas: bórrala o déjala dormir.
+   Ludo ya va dentro de Royale Club: no hace falta un servicio aparte. Si en tu cuenta sigue existiendo el antiguo `ludo-club`, bórralo desde el panel de Render (quitarlo del archivo no lo borra) para no gastar horas del plan gratuito.
 5. Límites: se pierden mesas y perfiles al dormirse o reiniciarse. Para uso continuo: plan de pago + disco (bloque
    comentado en `render.yaml`).
 
