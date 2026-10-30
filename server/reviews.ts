@@ -118,7 +118,10 @@ export class Reviews {
         const { default: pg } = await import('pg');
         // Supabase y Neon exigen TLS; DATABASE_SSL=0 lo desactiva (por ejemplo, un Postgres local).
         const pool = new pg.Pool({ connectionString: url, max: 3, ssl: process.env.DATABASE_SSL === '0' ? false : { rejectUnauthorized: false } }) as unknown as PgPool;
-        await pool.query(SCHEMA);
+        // El esquema lo crean las migraciones de db/migrations. DB_AUTO_SCHEMA=1 crea solo la tabla de reseñas (pruebas rápidas).
+        if (process.env.DB_AUTO_SCHEMA === '1') await pool.query(SCHEMA);
+        const has = await pool.query("select to_regclass('public.reviews') as t");
+        if (!has.rows[0]?.t) throw new Error('falta la tabla reviews: aplica db/migrations/0001_init.sql en Supabase');
         this.store = pgStore(pool);
         this.mode = 'postgres';
         return;

@@ -72,7 +72,7 @@ Son **privadas**: solo las ves tú.
 
 1. Crea un Postgres gratuito (Supabase o Neon) y copia su **URL de conexión**.
 2. En Render, en *Environment* del servicio, añade `DATABASE_URL` (esa URL) y `ADMIN_KEY` (una clave larga que inventes, mínimo 12 caracteres).
-3. Al arrancar, el servidor crea solo la tabla `reviews` (id, created_at, pid, name, game, rating 1-5, comment, room_code, theme).
+3. Aplica la migración `db/migrations/0001_init.sql` en el *SQL Editor* de Supabase (ver `db/README.md`): crea `reviews` y el resto del esquema. El servidor ya no crea tablas por su cuenta y avisa en el log si falta.
 4. Lee las reseñas en `https://TU-APP.onrender.com/admin/reviews?key=TU_CLAVE` (promedio por juego y lista; añade `&format=json` para los datos crudos).
    Sin `ADMIN_KEY` la ruta no existe. Con `DATABASE_SSL=0` se desactiva TLS (solo para un Postgres local).
 
