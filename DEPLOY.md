@@ -83,16 +83,35 @@ Cada persona puede valorar cada juego una vez cada 12 horas.
 
 Con la base de datos conectada y las migraciones `0001` y `0002` aplicadas, el servidor mide mesas, rondas y regresos. Míralo en `/admin/metrics?key=TU_CLAVE` (mismo `ADMIN_KEY` que las reseñas): uso por juego, mesas por día y regreso a 7 y 30 días por semana de llegada. Son solo conteos, sin datos personales.
 
+## Inicio con Google (recomendado)
+
+El botón **Continuar con Google** guarda el progreso en la cuenta de Google de cada persona: un toque, sin correos que esperar y sin necesitar SMTP. La app solo muestra el botón si Google está activado en Supabase.
+
+Se configura en dos paneles (las claves las pegas tú, nunca en un chat):
+
+1. **Google Cloud Console** ([console.cloud.google.com](https://console.cloud.google.com)): crea un proyecto (o usa uno). En **APIs y servicios → Pantalla de consentimiento de OAuth** elige *Externo* y pon el nombre de la app (**Royale Club**) y tu correo de soporte. Los permisos básicos (correo, perfil, openid) no suelen requerir verificación. Mientras la pantalla esté en modo *Prueba* solo pueden entrar los usuarios de prueba que añadas; para el público general pásala a *En producción*.
+2. En **Credenciales → Crear credenciales → ID de cliente de OAuth** elige *Aplicación web*. En **URI de redireccionamiento autorizados** pega la dirección que te muestra Supabase en su pantalla de Google (termina en `/auth/v1/callback`). Al crearlo te da un **Client ID** y un **Client Secret**.
+3. **Supabase → Authentication → Sign In / Providers → Google**: actívalo y pega el Client ID y el Client Secret. Guarda.
+4. **Supabase → Authentication → URL Configuration** (igual que para el correo): **Site URL** con la dirección de la app y, en **Redirect URLs**, esa dirección con `/**` y `http://localhost:3001/**` para probar en tu equipo.
+
+Qué ocurre: el botón lleva a Supabase, que lleva a Google; al volver, la web recibe un token que nuestro servidor usa para identificar la cuenta y vincular su perfil. El token se borra de la barra de direcciones al instante y no se guarda. Con Google no se envía ningún correo, así que no hay límite de envíos ni hace falta SMTP.
+
 ## Inicio con correo (cuentas y progreso)
 
-Quien entra con su correo conserva perfil, logros y estadísticas aunque cambie de teléfono o borre el navegador. Es con un **código de un solo uso** que llega al correo: no hay contraseñas. Quien prefiere jugar sin cuenta puede hacerlo (los amigos invitados a una mesa entran directo, sin registrarse).
+Quien entra con su correo conserva perfil, logros y estadísticas aunque cambie de teléfono o borre el navegador. El correo trae un **enlace** (un toque y entras) y, si lo configuras así, también un **código**: sirve cualquiera de los dos. No hay contraseñas. Quien prefiere jugar sin cuenta puede hacerlo (los invitados a una mesa entran directo, sin registrarse).
 
-Requisitos (todo se hace en el panel de Supabase, sin escribir claves en ningún chat):
+Todo se configura en el panel de Supabase (sin escribir claves en ningún chat):
 
 1. **Authentication → Providers → Email**: déjalo activado.
-2. **Authentication → Email Templates**: en las plantillas **Magic Link** y **Confirm signup** cambia el texto para que muestre el código, por ejemplo: `<p>Tu código de Royale Club es <b>{{ .Token }}</b></p>`. Sin `{{ .Token }}` el correo solo trae un enlace y la app no puede usarlo.
-3. **Project Settings → API**: copia la clave **anon / public** (no la `service_role`) y ponla en Render (y en tu `.env`) como `SUPABASE_ANON_KEY`. La dirección del proyecto se deduce de `DATABASE_URL`; si quieres fijarla, añade `SUPABASE_URL=https://TU_REF.supabase.co`.
-4. **Envío de correos**: el servicio integrado de Supabase es solo para pruebas y envía muy pocos correos por hora. Para usarlo con gente real configura tu propio SMTP en **Authentication → SMTP Settings** (por ejemplo Resend o Brevo, ambos con plan gratuito).
-5. El código puede tener 6 u 8 dígitos según el proyecto; la app acepta de 6 a 10.
+2. **Authentication → URL Configuration** (esto es lo que evita el error de `localhost` al abrir el enlace):
+   - **Site URL**: la dirección pública de la app, por ejemplo `https://TU-SERVICIO.onrender.com`. Por defecto es `http://localhost:3000`, y por eso el enlace llevaba a una página que no existe.
+   - **Redirect URLs**: añade la misma dirección con `/**` al final (`https://TU-SERVICIO.onrender.com/**`) y, para probar en tu equipo, `http://localhost:3001/**`. El servidor le pide a Supabase volver a la dirección desde la que se pidió el correo, pero Supabase solo lo respeta si está en esta lista.
+3. **Authentication → Emails → Templates** (opcional): con las plantillas por defecto el correo trae **solo el enlace**, y eso basta: la app funciona con el enlace. Supabase **no deja editar las plantillas hasta configurar un SMTP propio** (paso 5). Cuando lo tengas, en **Confirm sign up** y en **Magic link or OTP** puedes añadir el código, por ejemplo:
+   `<p><a href="{{ .ConfirmationURL }}">Entrar a Royale Club</a></p><p>O escribe este código: <b>{{ .Token }}</b></p>`
+4. **Project Settings → API**: copia la clave **anon / public** (no la `service_role`) y ponla en Render (y en tu `.env`) como `SUPABASE_ANON_KEY`. La dirección del proyecto se deduce de `DATABASE_URL`; si quieres fijarla, añade `SUPABASE_URL=https://TU_REF.supabase.co`.
+5. **Envío de correos**: el servicio integrado de Supabase es solo para pruebas: envía muy pocos correos por hora y, según lo que he leído, solo a miembros de tu equipo del proyecto (confírmalo en su documentación). **Antes de invitar a amigos hay que configurar tu propio SMTP** en **Authentication → Emails → SMTP Settings** (por ejemplo Brevo, que permite verificar un solo correo remitente sin tener dominio, o Resend si tienes dominio propio; revisa sus límites gratuitos vigentes).
+6. El código puede tener 6 u 8 dígitos según el proyecto; la app acepta de 6 a 10.
+
+Qué ocurre al abrir el enlace: Supabase devuelve a la persona a la web con un token en la dirección; la web se lo manda a nuestro servidor, que le pregunta a Supabase quién es y vincula su perfil. El token se borra de la barra de direcciones de inmediato y no se guarda. Si el enlace se abre en otro navegador distinto de donde se pidió (por ejemplo la app instalada y el navegador del móvil), la sesión se inicia en el que se abrió; el código permite entrar en el mismo donde se pidió.
 
 Sin `SUPABASE_ANON_KEY` o sin `DATABASE_URL` la opción de correo no aparece y todo funciona como invitado. El correo lo guarda Supabase Auth, no nuestras tablas; nuestro perfil solo guarda el identificador de la cuenta (`profiles.user_id`).

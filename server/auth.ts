@@ -32,6 +32,7 @@ export class AuthService {
   }
 
   private async call(path: string, body: unknown): Promise<{ ok: boolean; status: number; data: Record<string, unknown> }> {
+    // `path` puede llevar parámetros (por ejemplo ?redirect_to=…)
     const res = await this.fetcher(`${this.url}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: process.env.SUPABASE_ANON_KEY! },
@@ -43,16 +44,63 @@ export class AuthService {
     return { ok: res.ok, status: res.status, data };
   }
 
-  /** Pide a Supabase que envíe el código al correo. Devuelve null si salió bien, o el motivo (para mostrarlo). */
-  async start(email: string): Promise<string | null> {
+  private provCache: { at: number; value: { google: boolean; email: boolean } } | null = null;
+
+  /** Qué formas de entrar tiene activadas el proyecto en Supabase (se consulta y se guarda unos minutos). */
+  async providers(): Promise<{ google: boolean; email: boolean }> {
+    if (this.provCache && Date.now() - this.provCache.at < 5 * 60_000) return this.provCache.value;
+    let value = { google: false, email: true };
     try {
-      const r = await this.call('/auth/v1/otp', { email, create_user: true });
+      const res = await this.fetcher(`${this.url}/auth/v1/settings`, { headers: { apikey: process.env.SUPABASE_ANON_KEY! }, signal: AbortSignal.timeout(8_000) });
+      if (res.ok) {
+        const ext = ((await res.json()) as { external?: Record<string, unknown> }).external ?? {};
+        value = { google: ext.google === true, email: ext.email !== false };
+      }
+    } catch { /* sin respuesta: se muestra solo el correo */ }
+    this.provCache = { at: Date.now(), value };
+    return value;
+  }
+
+  /** Dirección de Supabase a la que se manda a la persona para entrar con Google (y que luego la devuelve a `redirectTo`). */
+  googleUrl(redirectTo?: string): string {
+    const q = new URLSearchParams({ provider: 'google' });
+    if (redirectTo) q.set('redirect_to', redirectTo);
+    return `${this.url}/auth/v1/authorize?${q.toString()}`;
+  }
+
+  /** Pide a Supabase que envíe el código al correo. Devuelve null si salió bien, o el motivo (para mostrarlo). */
+  async start(email: string, redirectTo?: string): Promise<string | null> {
+    try {
+      // `redirectTo` es la dirección de esta web: el enlace del correo vuelve ahí (Supabase solo lo respeta si está en su lista de URLs permitidas;
+      // si no, usa la "Site URL" configurada).
+      const query = redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : '';
+      const r = await this.call(`/auth/v1/otp${query}`, { email, create_user: true });
       if (r.ok) return null;
       if (r.status === 429) return 'Espera un minuto antes de pedir otro código.';
       if (r.status === 400 || r.status === 422) return 'No se pudo enviar el código a ese correo.';
       return 'No se pudo enviar el código ahora. Inténtalo en unos minutos.';
     } catch {
       return 'No se pudo conectar para enviar el código. Inténtalo en unos minutos.';
+    }
+  }
+
+  /**
+   * Enlace del correo: Supabase devuelve al usuario a la web con un token de acceso en la dirección.
+   * El token solo se usa aquí para preguntarle a Supabase quién es (no se guarda ni se devuelve al navegador).
+   */
+  async userFromToken(accessToken: string): Promise<AuthUser | null> {
+    if (!/^[\w-]+\.[\w-]+\.[\w-]+$/.test(accessToken) || accessToken.length > 4096) return null;
+    try {
+      const res = await this.fetcher(`${this.url}/auth/v1/user`, {
+        headers: { apikey: process.env.SUPABASE_ANON_KEY!, Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) return null;
+      const u = (await res.json()) as { id?: unknown; email?: unknown };
+      if (typeof u.id !== 'string' || !/^[0-9a-f-]{36}$/i.test(u.id) || typeof u.email !== 'string') return null;
+      return { id: u.id, email: u.email };
+    } catch {
+      return null;
     }
   }
 

@@ -22,6 +22,8 @@
   }
   // Entrar con el correo guarda el progreso en una cuenta. Quien prefiere jugar sin cuenta (o llega por invitación) pasa directo.
   let guest = $state(invited.length === 4 || sessionStorage.getItem('rc_guest') === '1');
+  // Si la sesión se inicia desde el enlace del correo, el nombre del perfil se rellena solo.
+  $effect(() => { if (account.email && net.name) name = net.name; });
   const showLogin = $derived(account.checked && account.enabled && !account.email && !guest);
   function chooseGuest() {
     guest = true;

@@ -29,16 +29,60 @@ class Account {
 
   constructor() {
     void this.check();
+    void this.fromLink();
   }
+
+  /**
+   * Quien abre el enlace del correo vuelve a la web con un token en la dirección (#access_token=…).
+   * Se manda al servidor para identificar la cuenta y se borra de la barra de direcciones enseguida.
+   */
+  async fromLink() {
+    // Errores de Google/Supabase al volver (por ejemplo si la persona cancela) llegan en la dirección.
+    const q = new URLSearchParams(location.search);
+    if (q.get('error_code') || (q.get('error') && q.get('error_description'))) {
+      history.replaceState(null, '', location.pathname);
+      net.toast(q.get('error') === 'access_denied' ? 'Cancelaste el inicio de sesión.' : 'No se pudo iniciar sesión. Inténtalo de nuevo.');
+      return;
+    }
+    const hash = location.hash.replace(/^#/, '');
+    if (!hash.includes('access_token=') && !hash.includes('error=')) return;
+    const p = new URLSearchParams(hash);
+    history.replaceState(null, '', location.pathname + location.search);
+    const token = p.get('access_token');
+    if (!token) {
+      net.toast(p.get('error_code') === 'otp_expired' ? 'El enlace caducó o ya se usó. Pide otro.' : 'No se pudo iniciar sesión con ese enlace.');
+      return;
+    }
+    const r = await post('/api/auth/session', { token, pid: net.pid });
+    if (!r.ok) { net.toast(String(r.data.error ?? 'No se pudo iniciar sesión con ese enlace.')); return; }
+    const { pid, name, email } = r.data as { pid: string; name: string; email: string };
+    net.adoptIdentity(pid, name === 'Jugador' ? net.name : name);
+    this.email = email;
+    save(email);
+    net.toast(`Sesión iniciada: ${email}`, 'ok');
+  }
+
+  /** ¿Está activado "Continuar con Google" en el proyecto? */
+  google = $state(false);
+  /** ¿Está activado el correo? */
+  mail = $state(true);
 
   async check() {
     try {
       const res = await fetch('/api/auth/config');
-      this.enabled = !!((await res.json()) as { enabled?: boolean }).enabled;
+      const c = (await res.json()) as { enabled?: boolean; google?: boolean; email?: boolean };
+      this.enabled = !!c.enabled;
+      this.google = !!c.google;
+      this.mail = c.email !== false;
     } catch {
       this.enabled = false;
     }
     this.checked = true;
+  }
+
+  /** Lleva a la persona a Google (pasando por nuestro servidor y Supabase); vuelve a esta web ya identificada. */
+  signInWithGoogle() {
+    location.assign('/api/auth/google');
   }
 
   /** Pide el código al correo. Devuelve null si salió bien o el mensaje de error. */
