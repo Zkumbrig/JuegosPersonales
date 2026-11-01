@@ -301,6 +301,22 @@ test('"terminar al primero" acaba al ganar el primero y cierra la clasificación
   assert.ok(feed.some((f) => /ganó el Ludo/.test(f)));
 });
 
+test('con más de 8 personas en la mesa juegan las 8 primeras y el resto mira (ya no hay tope de mesa)', () => {
+  const names = Array.from({ length: 11 }, (_, i) => `Jugador${i + 1}`);
+  const { lu } = mkRoom(names);
+  assert.ok(lu.config(host, { board: 4 }), 'con 11 personas un tablero de 4 sigue sin caber');
+  assert.equal(lu.config(host, { board: 8 }), undefined, 'el de 8 se acepta aunque haya 11 personas');
+  assert.equal(pub(lu).seats.length, 8, 'solo hay 8 asientos');
+  assert.deepEqual(pub(lu).seats.map((s) => s.id), names.slice(0, 8).map((_, i) => `p${i}`), 'se sientan las 8 primeras en entrar');
+  assert.equal(lu.start(host), undefined, 'se puede empezar');
+  const seated = new Set(inner(lu).seats.map((s) => s.id));
+  assert.equal(seated.size, 8);
+  assert.ok(!seated.has('p8') && !seated.has('p9') && !seated.has('p10'), 'las tres últimas miran');
+  const bots = mkRoom(names);
+  bots.lu.config(host, { board: 8, bots: 3 });
+  assert.equal(pub(bots.lu).seats.filter((s) => s.bot).length, 0, 'con la mesa llena no se añaden bots que desplacen a nadie');
+});
+
 test('el casino está activo por defecto y CASINO=0 lo oculta', () => {
   const make = () => {
     const r = new RealRoom('ABCD', () => {});

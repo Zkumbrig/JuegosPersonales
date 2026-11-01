@@ -271,6 +271,19 @@ b.send({ t: 'join', pid: b.pid, name: b.name, code });
 await until(() => b.room?.players.length === 2, 'segundo jugador');
 assert.equal(a.room.players.find((p) => p.host)?.id, a.pid);
 console.log(`Sala ${code} con 2 jugadores OK`);
+
+// Sin tope de 8: la mesa admite más personas (antes la novena recibía "La mesa está llena.")
+{
+  const extra = Array.from({ length: 10 }, (_, i) => new Client(`player-extra${String(i).padStart(2, '0')}xx`, `Extra${i + 1}`));
+  await Promise.all(extra.map((c) => c.open()));
+  for (const c of extra) c.send({ t: 'join', pid: c.pid, name: c.name, code });
+  await until(() => a.room.players.length === 12, 'doce personas en la misma mesa');
+  assert.ok(extra.every((c) => c.errors.length === 0), 'nadie recibe "mesa llena"');
+  for (const c of extra) { c.send({ t: 'leave' }); }
+  await until(() => a.room.players.length === 2, 'las personas extra se van');
+  for (const c of extra) c.ws.close();
+  console.log('Mesa con 12 personas OK (sin tope de 8)');
+}
 await until(() => a.achievements.includes('first-night') && b.achievements.includes('first-night'), 'logro de bienvenida');
 
 // Blackjack: ambos apuestan -> reparto automático

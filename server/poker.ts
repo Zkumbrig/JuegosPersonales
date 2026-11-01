@@ -29,6 +29,8 @@ const SHOWDOWN_TIME = 7_000;
 const UNCONTESTED_TIME = 4_000;
 const RUNOUT_STEP = 1_300;
 const STREETS = ['preflop', 'flop', 'turn', 'river'] as const;
+/** Asientos de la mesa de póker (una baraja de 52 no alcanza para repartir a más de 23). Quien no cabe mira. */
+const MAX_SEATS = 10;
 
 const SUITS: Suit[] = ['S', 'H', 'D', 'C'];
 const RANK_STR: Record<number, string> = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
@@ -88,6 +90,7 @@ export class Poker {
   sit(p: Player, buyin: number): string | void {
     const existing = this.seats.find((s) => s.id === p.id);
     if (existing) return existing.gone ? 'Espera a que termine la mano.' : 'Ya estás sentado.';
+    if (this.seats.length >= MAX_SEATS) return 'La mesa de póker está llena: puedes mirar y entrar cuando alguien se levante.';
     if (!(POKER_BUYINS as readonly number[]).includes(buyin)) return 'Entrada no válida.';
     if (buyin > p.chips) return 'No tienes fichas suficientes.';
     p.chips -= buyin;

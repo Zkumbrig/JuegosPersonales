@@ -26,7 +26,8 @@
 
   // ---------- Preparación ----------
   const opts = $derived(live.options);
-  const humans = $derived(players.length);
+  // Con más personas que asientos del tablero más grande, juegan las primeras que entraron y el resto mira.
+  const humans = $derived(Math.min(players.length, Math.max(...BOARDS)));
   const maxBots = $derived(Math.max(0, opts.board - Math.min(humans, opts.board)));
   const outside = $derived(players.slice(opts.board));
   const patch = (p: Partial<LudoOptions>) => net.send({ t: 'lu:config', patch: p });
@@ -136,7 +137,9 @@
           </li>
         {/each}
       </ul>
-      {#if outside.length}
+      {#if outside.length && players.length > Math.max(...BOARDS)}
+        <p class="warn muted">Hay {players.length} personas: juegan las primeras {Math.max(...BOARDS)} en entrar y las demás miran la partida.</p>
+      {:else if outside.length}
         <p class="warn">{outside.map((p) => p.name).join(', ')} no caben: sube el tablero o expulsa a alguien.</p>
       {/if}
     </section>

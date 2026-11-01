@@ -15,7 +15,7 @@ import { renderMetrics, telemetry } from './telemetry';
 import { renderAdmin, reviews } from './reviews';
 import { timingSafeEqual } from 'node:crypto';
 import { makeCode, rnd } from './util';
-import { MAX_PLAYERS, type ClientMsg, type ServerMsg } from '../shared/protocol';
+import type { ClientMsg, ServerMsg } from '../shared/protocol';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -24,6 +24,10 @@ const DATA_FILE = process.env.DATA_FILE ?? path.join(ROOT, 'data', 'rooms.json')
 const PERSIST_MS = Number(process.env.PERSIST_MS) || 10_000;
 /** Detrás de un proxy (Hostinger, Nginx, Cloudflare) la IP real viene en x-forwarded-for. */
 const TRUST_PROXY = process.env.TRUST_PROXY === '1';
+
+// Personas por mesa: ya no hay el tope de 8 (los juegos que tienen asientos limitados, como el Ludo o el póker, dejan mirar al resto).
+// Como protección del servidor queda un techo alto, 50 por defecto; MAX_ROOM_PLAYERS=0 lo quita del todo.
+const MAX_ROOM_PLAYERS = process.env.MAX_ROOM_PLAYERS === '0' ? Infinity : Number(process.env.MAX_ROOM_PLAYERS) || 50;
 
 // Límites contra abusos (todos ajustables por entorno; los valores por defecto sirven para una fiesta)
 const RATE_BURST = Number(process.env.RATE_BURST) || 40; // mensajes seguidos permitidos
@@ -242,7 +246,7 @@ wss.on('connection', (ws, req) => {
         let p = target.players.get(pid);
         let isNew = false;
         if (!p) {
-          if (target.players.size >= MAX_PLAYERS) return send(ws, { t: 'err', msg: 'La mesa está llena.' });
+          if (target.players.size >= MAX_ROOM_PLAYERS) return send(ws, { t: 'err', msg: 'La mesa está llena.' });
           p = new Player(pid, name, rnd(8));
           target.players.set(pid, p);
           if (!target.hostId) target.hostId = pid;

@@ -7,6 +7,9 @@ import {
   type LudoEvent, type LudoOptions, type LudoPublic, type LudoSeat,
 } from '../shared/ludo';
 
+/** Asientos del tablero más grande: más personas que esto en la mesa no caben y miran. */
+const MAX_BOARD = Math.max(...BOARDS);
+
 /** Pausas que hacen que la partida se pueda seguir a ojo. En las pruebas se ponen a cero. */
 export interface LudoTiming {
   act: number; // un bot (o un ausente) tira o mueve
@@ -108,7 +111,8 @@ export class Ludo {
     if (p.id !== this.room.hostId) return 'Solo el anfitrión cambia los ajustes.';
     if (this.phase !== 'setup') return 'La partida ya empezó.';
     const next = { ...this.options };
-    const humans = this.room.players.size;
+    // Si hay más personas que asientos en el tablero más grande, juegan las primeras que entraron y el resto mira.
+    const humans = Math.min(this.room.players.size, MAX_BOARD);
     if (patch.board !== undefined) {
       if (!BOARDS.includes(patch.board)) return 'Tablero no válido.';
       if (patch.board < humans) return `Hay ${humans} jugadores en la mesa: elige un tablero mayor.`;
@@ -137,7 +141,7 @@ export class Ludo {
   start(p: { id: string }): string | void {
     if (p.id !== this.room.hostId) return 'Solo el anfitrión empieza la partida.';
     if (this.phase !== 'setup') return 'La partida ya empezó.';
-    if (this.room.players.size > this.options.board) return 'No caben todos: elige un tablero mayor.';
+    if (Math.min(this.room.players.size, MAX_BOARD) > this.options.board) return 'No caben todos: elige un tablero mayor.';
     const preview = this.previewSeats();
     if (preview.length < 2) return 'Hacen falta al menos 2 jugadores. Añade un bot.';
     this.seats = preview.map((s) => ({ ...s, drought: 0, strikes: 0, dcAt: null }));

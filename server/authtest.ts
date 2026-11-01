@@ -255,7 +255,11 @@ await test('Google: el servicio sabe qué formas de entrar tiene activadas y arm
   assert.deepEqual(await a.providers(), { google: true, email: true });
   await a.providers();
   assert.equal(calls, 1, 'se guarda unos minutos para no preguntar en cada visita');
-  assert.equal(a.googleUrl('https://royale.onrender.com'), 'https://proyecto.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Froyale.onrender.com');
+  assert.equal(
+    a.googleUrl('https://royale.onrender.com'),
+    'https://proyecto.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Froyale.onrender.com&prompt=select_account',
+    'siempre se pide el selector de cuentas de Google',
+  );
   const off = new AuthService();
   off.fetcher = (async () => json(200, { external: { google: false, email: true } })) as typeof fetch;
   assert.deepEqual(await off.providers(), { google: false, email: true });
@@ -271,7 +275,7 @@ await test('HTTP: el botón de Google redirige a Supabase y vuelve a esta misma 
     const r = await noFollow(port);
     assert.equal(r.status, 302);
     const loc = r.headers.get('location')!;
-    assert.match(loc, /^https:\/\/proyecto\.supabase\.co\/auth\/v1\/authorize\?provider=google&redirect_to=http%3A%2F%2F127\.0\.0\.1%3A\d+$/);
+    assert.match(loc, /^https:\/\/proyecto\.supabase\.co\/auth\/v1\/authorize\?provider=google&redirect_to=http%3A%2F%2F127\.0\.0\.1%3A\d+&prompt=select_account$/);
   });
   googleOn = false;
   await withServer(async (call, port) => {

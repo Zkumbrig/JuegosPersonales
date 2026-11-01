@@ -115,3 +115,7 @@ Todo se configura en el panel de Supabase (sin escribir claves en ningún chat):
 Qué ocurre al abrir el enlace: Supabase devuelve a la persona a la web con un token en la dirección; la web se lo manda a nuestro servidor, que le pregunta a Supabase quién es y vincula su perfil. El token se borra de la barra de direcciones de inmediato y no se guarda. Si el enlace se abre en otro navegador distinto de donde se pidió (por ejemplo la app instalada y el navegador del móvil), la sesión se inicia en el que se abrió; el código permite entrar en el mismo donde se pidió.
 
 Sin `SUPABASE_ANON_KEY` o sin `DATABASE_URL` la opción de correo no aparece y todo funciona como invitado. El correo lo guarda Supabase Auth, no nuestras tablas; nuestro perfil solo guarda el identificador de la cuenta (`profiles.user_id`).
+
+## Personas por mesa
+
+Ya no hay el tope de 8: por defecto una mesa admite hasta **50** personas. Para cambiarlo pon `MAX_ROOM_PLAYERS` en Render (por ejemplo `100`), y con `MAX_ROOM_PLAYERS=0` se quita el límite del todo (cuidado: cada cambio de estado se envía a todos los jugadores, así que con muchísimas conexiones el servidor gratuito se resentiría). Los juegos con asientos limitados dejan mirar al resto: en **Ludo** juegan las 8 primeras personas en entrar (tableros de 4, 6 u 8), en el **póker sin apuestas** 8 y en el **póker con fichas** 10.

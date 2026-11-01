@@ -65,6 +65,9 @@ export class AuthService {
   googleUrl(redirectTo?: string): string {
     const q = new URLSearchParams({ provider: 'google' });
     if (redirectTo) q.set('redirect_to', redirectTo);
+    // Siempre se muestra el selector de cuentas de Google: sin esto, si el navegador ya tiene una cuenta abierta, entra directo
+    // sin preguntar (mal en teléfonos compartidos, al cambiar de cuenta o después de "Salir").
+    q.set('prompt', 'select_account');
     return `${this.url}/auth/v1/authorize?${q.toString()}`;
   }
 

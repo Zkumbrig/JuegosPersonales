@@ -3,7 +3,6 @@
 export const BRAND = 'Royale Club';
 export const START_CHIPS = 1000;
 export const MIN_REBUY_BELOW = 10;
-export const MAX_PLAYERS = 8;
 export const CHIP_VALUES = [10, 50, 100, 500, 1000] as const;
 
 import type { LudoOptions, LudoPublic } from './ludo';
