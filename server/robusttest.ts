@@ -1,6 +1,7 @@
 // Pruebas de robustez: arranca servidores reales como procesos aparte y los maltrata.
 //   npm run test:robust
 process.env.DATABASE_URL = ''; // las pruebas nunca tocan la base de datos real
+process.env.AI_CONTENT = '0'; // ni llaman a Gemini (el .env del equipo tiene la clave)
 process.env.POKER = '1'; // estas pruebas ejercitan el póker y las tragaperras, que por defecto están ocultos
 process.env.SLOTS = '1';
 import assert from 'node:assert/strict';

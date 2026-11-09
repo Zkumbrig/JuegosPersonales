@@ -119,3 +119,12 @@ Sin `SUPABASE_ANON_KEY` o sin `DATABASE_URL` la opción de correo no aparece y t
 ## Personas por mesa
 
 Ya no hay el tope de 8: por defecto una mesa admite hasta **50** personas. Para cambiarlo pon `MAX_ROOM_PLAYERS` en Render (por ejemplo `100`), y con `MAX_ROOM_PLAYERS=0` se quita el límite del todo (cuidado: cada cambio de estado se envía a todos los jugadores, así que con muchísimas conexiones el servidor gratuito se resentiría). Los juegos con asientos limitados dejan mirar al resto: en **Ludo** juegan las 8 primeras personas en entrar (tableros de 4, 6 u 8), en el **póker sin apuestas** 8 y en el **póker con fichas** 10.
+
+## Frases de la IA: guardado y aprendizaje
+
+Las frases que genera Gemini ya no viven solo en la memoria del servidor: se guardan en Supabase (tabla `ai_phrases`) y se cargan al arrancar, así que sobreviven a reinicios y a que Render se duerma. Para activarlo:
+
+1. En **Supabase → SQL Editor** pega y ejecuta `db/migrations/0003_ai_phrases_learning.sql` (se puede ejecutar varias veces). Sin ella todo sigue funcionando como antes, pero las frases se pierden al reiniciar.
+2. Mira cómo van en `/admin/frases?key=TU_ADMIN_KEY`: cuántas hay por juego y nivel, y cuáles funcionan mejor y peor (se mide solo con conteos, sin datos de personas).
+
+Variables opcionales: `AI_SHARE` (de 0 a 1, por defecto 0.85) es la proporción de cartas que salen de la IA cuando hay frases guardadas; el resto viene del catálogo. `AI_CONTENT=0` apaga toda la IA. Al arrancar, el servidor rellena en segundo plano los depósitos que tengan menos de 12 frases (se piden con una pausa de unos segundos entre lotes para respetar el límite de Gemini).

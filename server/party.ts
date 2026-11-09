@@ -1,10 +1,12 @@
 import { rnd, shuffle } from './util';
 import type { Room, Player } from './room';
-import { aiContent, quipMaker, type AiKind, type QuipRequest } from './ai';
+import { aiContent, quipMaker, type AiKind, type QuipRequest, type Taken } from './ai';
 import { curatedQuip, type QuipCtx } from './quips';
 import { DARES, KING_RULES, LIKELY, NEVER, TRUTHS, WOULD, type Item } from './content';
 import type { PartyGame, PartyLevel, PartyPublic, Suit } from '../shared/protocol';
 
+/** De cada 100 cartas, cuántas salen de la IA cuando hay frases guardadas (el resto, de la lista curada). */
+const AI_SHARE = Math.min(1, Math.max(0, Number(process.env.AI_SHARE ?? 0.85)));
 const REVEAL_DELAY = 700;
 const WAIT_MIN = 2_000;
 const WAIT_SPAN = 3_500;
@@ -34,6 +36,8 @@ export class Party {
   kings = 0;
   /** Comentario con gracia sobre lo que acaba de pasar (escrito a mano al instante; la IA puede mejorarlo después). */
   quip: string | null = null;
+  /** Identificador de la frase de la IA que se está jugando (para medir cómo funciona); null si es de la lista curada. */
+  private promptId: string | null = null;
   private answers = new Map<string, string>();
   private picks: Record<string, string> | null = null;
   private drinkers: string[] = [];
@@ -166,6 +170,7 @@ export class Party {
       case 'truth':
         if (!isHost && p.id !== this.target) return 'Solo el anfitrión o quien está en el centro pasa de turno.';
         if (!isHost && (this.phase === 'choose' || this.phase === 'prompt')) return 'Primero hay que resolver el turno.';
+        if (this.phase === 'prompt') aiContent.record(this.promptId, { skipped: 1 }); // el anfitrión saltó una frase sin resolver
         return this.startTruth();
       case 'kings':
         if (this.phase === 'idle') return isHost ? this.startKings() : 'Solo el anfitrión empieza.';
@@ -187,12 +192,13 @@ export class Party {
     this.picks = null;
     this.drinkers = [];
     this.options = null;
+    this.promptId = null;
     if (g === 'never') this.prompt = this.aiText('never') ?? this.draw('never', NEVER).text;
     else if (g === 'likely') this.prompt = `¿Quién es más probable que ${this.aiText('likely') ?? this.draw('likely', LIKELY).text}`;
     else {
-      const ai = this.aiPick('would');
+      const ai = this.aiTake('would');
       this.prompt = '¿Qué prefieres?';
-      if (Array.isArray(ai)) this.options = ai;
+      if (ai && Array.isArray(ai.item)) { this.options = ai.item; this.promptId = ai.id; }
       else {
         const i = this.pickPair();
         this.options = [WOULD[i].a, WOULD[i].b];
@@ -203,16 +209,18 @@ export class Party {
   }
 
   /**
-   * Frase nueva de la IA (si hay): sale en 7 de cada 10 cartas para que se mezcle con la lista curada.
-   * Si no hay clave, cuota o red, devuelve null y se usa la lista de siempre.
+   * Frase nueva de la IA (si hay): sale en AI_SHARE de las cartas (85 % por defecto) y el resto viene de la lista curada.
+   * Si no hay clave, cuota o frases guardadas, devuelve null y se usa la lista de siempre.
    */
-  private aiPick(kind: AiKind) {
-    return Math.random() < 0.7 ? aiContent.take(kind, this.level) : null;
+  private aiTake(kind: AiKind): Taken | null {
+    return Math.random() < AI_SHARE ? aiContent.takeWithId(kind, this.level) : null;
   }
 
   private aiText(kind: AiKind): string | null {
-    const a = this.aiPick(kind);
-    return typeof a === 'string' ? a : null;
+    const t = this.aiTake(kind);
+    if (!t || typeof t.item !== 'string') return null;
+    this.promptId = t.id;
+    return t.item;
   }
 
   private pickPair(): number {
@@ -299,6 +307,7 @@ export class Party {
     if (this.phase === 'choose') {
       if (value !== 'truth' && value !== 'dare') return 'Elige verdad o reto.';
       this.kind = value;
+      this.promptId = null;
       this.prompt = value === 'truth' ? (this.aiText('truth') ?? this.draw('truth', TRUTHS).text) : (this.aiText('dare') ?? this.draw('dare', DARES).text);
       this.phase = 'prompt';
       this.room.broadcast();
@@ -307,6 +316,7 @@ export class Party {
     if (this.phase === 'prompt') {
       if (value !== 'done' && value !== 'drink') return 'Respuesta no válida.';
       this.resolved = value;
+      aiContent.record(this.promptId, value === 'done' ? { accepted: 1 } : { declined: 1 });
       if (value === 'drink') this.addTally([p.id]);
       this.room.noteRound();
       this.phase = 'done';
@@ -343,19 +353,24 @@ export class Party {
     const g = this.room.game;
     const entries = [...this.answers].filter(([id]) => this.room.players.has(id));
     this.picks = Object.fromEntries(entries);
+    let hits = 0; // lo que se mide de la frase: ver la tabla ai_phrases (columna hits)
     if (g === 'never') {
       this.drinkers = entries.filter(([, v]) => v === 'yes').map(([id]) => id);
+      hits = this.drinkers.length;
     } else if (g === 'likely') {
       const counts = new Map<string, number>();
       for (const [, v] of entries) counts.set(v, (counts.get(v) ?? 0) + 1);
       const max = Math.max(0, ...counts.values());
       this.drinkers = max > 0 ? [...counts].filter(([, c]) => c === max).map(([id]) => id) : [];
+      hits = max;
     } else if (g === 'would') {
       const a = entries.filter(([, v]) => v === 'A').length;
       const b = entries.filter(([, v]) => v === 'B').length;
       const minority = a < b ? 'A' : 'B';
       this.drinkers = a === b ? [] : entries.filter(([, v]) => v === minority).map(([id]) => id);
+      hits = Math.min(a, b);
     }
+    aiContent.record(this.promptId, { answered: entries.length, hits });
     this.addTally(this.drinkers);
     this.room.noteRound();
     this.phase = 'reveal';

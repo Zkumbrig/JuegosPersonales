@@ -12,6 +12,8 @@ import { profiles } from './profiles';
 import { authRoutes } from './authHttp';
 import { getDb } from './db';
 import { renderMetrics, telemetry } from './telemetry';
+import { aiContent } from './ai';
+import { renderPhrases } from './phrasesAdmin';
 import { renderAdmin, reviews } from './reviews';
 import { timingSafeEqual } from 'node:crypto';
 import { makeCode, rnd } from './util';
@@ -100,12 +102,23 @@ async function adminMetrics(req: IncomingMessage, url: URL, res: http.ServerResp
   }
 }
 
+async function adminPhrases(req: IncomingMessage, url: URL, res: http.ServerResponse) {
+  if (!adminGate(req, url, res)) return;
+  const report = await aiContent.report();
+  if (url.searchParams.get('format') === 'json') {
+    res.writeHead(200, { ...ADMIN_HEADERS, 'Content-Type': 'application/json; charset=utf-8' }).end(JSON.stringify(report));
+  } else {
+    res.writeHead(200, { ...ADMIN_HEADERS, 'Content-Type': 'text/html; charset=utf-8' }).end(renderPhrases(report));
+  }
+}
+
 // ---------- HTTP estático (producción) ----------
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', 'http://x');
     if (url.pathname === '/admin/reviews') return void (await adminReviews(req, url, res));
     if (url.pathname === '/admin/metrics') return void (await adminMetrics(req, url, res));
+    if (url.pathname === '/admin/frases') return void (await adminPhrases(req, url, res));
     if (await authRoutes(req, res, url)) return; // /api/auth/*: inicio de sesión por correo
     if (url.pathname === '/healthz') { res.writeHead(200, { 'Content-Type': 'text/plain' }).end('ok'); return; } // para el monitor de la plataforma
     let file = path.join(DIST, decodeURIComponent(url.pathname));
@@ -135,8 +148,10 @@ profiles.init(DATA_FILE.replace(/\.json$/, '') + '.profiles.json');
 const db = await getDb();
 await profiles.attachDb(db); // con Supabase, los perfiles y logros se guardan allí
 telemetry.attach(db); // y la medición de sesiones, rondas y regresos
+await aiContent.attachDb(db); // las frases de la IA se guardan y se miden: no se pierden al reiniciar
+void aiContent.prefill(); // y los depósitos bajos se rellenan en segundo plano nada más arrancar
 await reviews.init(DATA_FILE.replace(/\.json$/, '') + '.reviews.json');
-const persistTimer = setInterval(() => { saveRooms(DATA_FILE, rooms.values()); void profiles.save().then(() => telemetry.flush()); }, PERSIST_MS);
+const persistTimer = setInterval(() => { saveRooms(DATA_FILE, rooms.values()); void profiles.save().then(() => Promise.all([telemetry.flush(), aiContent.flush()])); }, PERSIST_MS);
 persistTimer.unref();
 
 // ---------- Límites por IP ----------
@@ -295,7 +310,7 @@ wss.on('connection', (ws, req) => {
 async function shutdown() {
   saveRooms(DATA_FILE, rooms.values());
   for (const code of rooms.keys()) telemetry.sessionClose(code);
-  await Promise.race([profiles.save().then(() => telemetry.flush()), new Promise((r) => setTimeout(r, 4000))]); // con base de datos, escribe lo pendiente
+  await Promise.race([profiles.save().then(() => Promise.all([telemetry.flush(), aiContent.flush()])), new Promise((r) => setTimeout(r, 4000))]); // con base de datos, escribe lo pendiente
   process.exit(0);
 }
 process.on('SIGTERM', shutdown);

@@ -5,7 +5,7 @@ Esquema de Royale Club en Postgres. Las migraciones están en [`migrations/`](mi
 ## Poner en marcha
 
 1. En [supabase.com](https://supabase.com) crea un proyecto (elige la región más cercana a tus jugadores y a Render).
-2. **Aplica las migraciones en orden**: *SQL Editor* → pega `migrations/0001_init.sql` → *Run*, y después `0002_metrics.sql`.
+2. **Aplica las migraciones en orden**: *SQL Editor* → pega `migrations/0001_init.sql` → *Run*, después `0002_metrics.sql` y por último `0003_ai_phrases_learning.sql` (las frases de la IA se guardan y se miden).
    (Se puede ejecutar más de una vez sin problema.)
 3. Copia la **cadena de conexión** en *Project Settings → Database → Connection string*.
    Desde Render usa la del **pooler** (modo *Transaction*, puerto 6543), que aguanta muchas conexiones cortas.
@@ -16,6 +16,7 @@ Esquema de Royale Club en Postgres. Las migraciones están en [`migrations/`](mi
 
 - **Perfiles y logros** (`profiles`, `achievements_unlocked`): se cargan al entrar cada jugador y se guardan en segundo plano (cada 10 s y al apagar). Si es la primera vez y la tabla está vacía, se importa una sola vez el archivo local de perfiles.
 - **Reseñas** (`reviews`).
+- **Frases de la IA que aprenden** (`ai_phrases`; migración `0003_ai_phrases_learning.sql`): cada frase generada se guarda y se carga al arrancar el servidor (no se pierde al reiniciar ni al dormirse Render). De cada una se miden solo conteos: veces mostrada, personas que respondieron, cuántas dijeron que sí / votaron / formaron la minoría, si el reto se cumplió o se rechazó y si el anfitrión la saltó. Con eso se calcula una nota; las que no funcionan se retiran y las mejores y peores se usan como ejemplos al pedir lotes nuevos. Se ve en la página privada `/admin/frases?key=TU_CLAVE`. Sin nombres ni identificadores de personas.
 - **Medición** (`room_sessions`, `game_results`, `game_result_players`, `profile_visits`; migración `0002_metrics.sql`): cada mesa guarda su sesión, cada ronda terminada su resultado y cada perfil los días que vuelve. Se escribe en segundo plano y nunca frena una partida. Las vistas `retention_weekly` (regreso a 7 y 30 días por semana de llegada) y `usage_by_game` (uso por juego) alimentan la página privada `/admin/metrics?key=TU_CLAVE`.
 - El resto de tablas está listo para cuando se usen. Sin `DATABASE_URL`, o si Supabase no responde, el servidor sigue con archivos locales.
 
