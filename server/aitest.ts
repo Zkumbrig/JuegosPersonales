@@ -105,6 +105,23 @@ await test('detecta frases parecidas aunque cambien las palabras', () => {
   assert.ok(!similar(a, sig('Yo nunca he bailado encima de una mesa en una boda.')));
 });
 
+await test('cada nivel pide una intensidad distinta y el extremo no se queda en lo familiar', async () => {
+  const ai = new AiContent();
+  const prompts: string[] = [];
+  ai.fetcher = (async (_u: unknown, init?: RequestInit) => {
+    prompts.push(JSON.parse(String(init?.body)).contents[0].parts[0].text as string);
+    return reply([])();
+  }) as typeof fetch;
+  assert.equal(await ai.refill('never', 1), 0);
+  assert.equal(await ai.refill('never', 3), 0);
+  assert.match(prompts[0], /Nada sexual/);
+  assert.doesNotMatch(prompts[0], /lenguaje adulto directo/);
+  assert.match(prompts[1], /lenguaje adulto directo/);
+  assert.match(prompts[1], /No escribas sexo, sexting/);
+  assert.match(prompts[1], /latinoamericano/);
+  assert.doesNotMatch(prompts[1], /mascotas/);
+});
+
 await test('AI_CONTENT=0 la desactiva aunque haya clave', () => {
   process.env.AI_CONTENT = '0';
   assert.equal(new AiContent().enabled, false);

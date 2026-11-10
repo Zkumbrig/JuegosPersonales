@@ -149,7 +149,7 @@ const db = await getDb();
 await profiles.attachDb(db); // con Supabase, los perfiles y logros se guardan allí
 telemetry.attach(db); // y la medición de sesiones, rondas y regresos
 await aiContent.attachDb(db); // las frases de la IA se guardan y se miden: no se pierden al reiniciar
-void aiContent.prefill(); // y los depósitos bajos se rellenan en segundo plano nada más arrancar
+void aiContent.prefill(); // si un juego no llegó a 120 frases, Gemini pide un lote más, apoyado en las ya escritas
 await reviews.init(DATA_FILE.replace(/\.json$/, '') + '.reviews.json');
 const persistTimer = setInterval(() => { saveRooms(DATA_FILE, rooms.values()); void profiles.save().then(() => Promise.all([telemetry.flush(), aiContent.flush()])); }, PERSIST_MS);
 persistTimer.unref();

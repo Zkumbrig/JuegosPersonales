@@ -209,11 +209,12 @@ export class Party {
   }
 
   /**
-   * Frase nueva de la IA (si hay): sale en AI_SHARE de las cartas (85 % por defecto) y el resto viene de la lista curada.
-   * Si no hay clave, cuota o frases guardadas, devuelve null y se usa la lista de siempre.
+   * Frase de la IA. Con el modelo sano, AI_SHARE (85 %) sale de la IA y el resto de la lista escrita.
+   * Si el modelo está saturado y hay frases guardadas, salen esas: no se usa la lista escrita.
    */
   private aiTake(kind: AiKind): Taken | null {
-    return Math.random() < AI_SHARE ? aiContent.takeWithId(kind, this.level) : null;
+    if (!aiContent.preferSaved(kind, this.level) && Math.random() >= AI_SHARE) return null;
+    return aiContent.takeWithId(kind, this.level);
   }
 
   private aiText(kind: AiKind): string | null {

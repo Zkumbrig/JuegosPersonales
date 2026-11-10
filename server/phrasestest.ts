@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
-import { AiContent, aiContent, phraseScore, type PhraseStats } from './ai';
+import { AiContent, STOCK_LIMIT, aiContent, phraseScore, type PhraseStats } from './ai';
 import { renderPhrases } from './phrasesAdmin';
 import type { SqlDb } from './db';
 
@@ -88,6 +88,23 @@ await test('lo generado se guarda y, tras un reinicio, vuelve a los depósitos s
   assert.equal(await reinicio.refill('never', 2), 0, 'pedir otra vez lo mismo no duplica nada');
 });
 
+await test('si el modelo se satura se reciclan las frases guardadas', async () => {
+  const { pg, db } = await freshDb();
+  for (let i = 0; i < 3; i++) {
+    await pg.query("insert into ai_phrases (kind, level, text) values ('never', 2, $1)", [`Yo nunca he guardado el respaldo número ${i} de una noche larga.`]);
+  }
+  const a = new AiContent();
+  a.fetcher = (async () => new Response('RESOURCE_EXHAUSTED', { status: 429 })) as typeof fetch;
+  await quiet(() => a.attachDb(db));
+  assert.equal(await quiet(() => a.refill('never', 2)), 0);
+  assert.equal(a.preferSaved('never', 2), true, 'con el modelo saturado y frases guardadas no toca la lista escrita');
+  const first = [a.take('never', 2), a.take('never', 2), a.take('never', 2)];
+  assert.equal(new Set(first).size, 3);
+  const again = a.take('never', 2);
+  assert.equal(typeof again, 'string');
+  assert.match(String(again), /respaldo número/);
+});
+
 await test('rotación: salen primero las que menos han salido', async () => {
   const { pg, db } = await freshDb();
   for (const [i, shown] of [4, 0, 9, 1].entries()) {
@@ -160,9 +177,9 @@ await test('cada depósito tiene su propia pausa tras un fallo, y la cuota agota
   assert.equal(calls, antes, 'con la cuota agotada ningún depósito pide');
 });
 
-await test('al arrancar solo se rellenan los depósitos que están bajos', async () => {
+await test('al arrancar solo se rellenan los juegos que no llegaron al tope', async () => {
   const { pg, db } = await freshDb();
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < STOCK_LIMIT; i++) {
     await pg.query("insert into ai_phrases (kind, level, text) values ('never', 1, $1)", [`Yo nunca he guardado el recuerdo número ${i} de una cita desastrosa.`]);
   }
   const a = new AiContent();
@@ -170,7 +187,62 @@ await test('al arrancar solo se rellenan los depósitos que están bajos', async
   const pedidos: string[] = [];
   a.fetcher = (async (_u: unknown, init?: RequestInit) => { pedidos.push(String(init?.body)); return reply([])(); }) as typeof fetch;
   await a.prefill(0);
-  assert.equal(pedidos.length, 14, '15 depósitos menos el que ya está lleno');
+  assert.equal(pedidos.length, 14, '15 depósitos menos el que ya llegó al tope');
+});
+
+await test('Gemini se basa en las frases del otro modelo y no pide más al llegar al tope', async () => {
+  const { pg, db } = await freshDb();
+  const base = [
+    'Yo nunca he dejado el celular grabando después de prometer que no.',
+    'Yo nunca he sonreído en una foto con alguien de quien hablé mal en el auto.',
+    'Yo nunca he pedido perdón en el grupo y en privado he dicho que no era para tanto.',
+    'Yo nunca he llegado tarde a propósito para no ayudar a ordenar.',
+  ];
+  for (const text of base) await pg.query("insert into ai_phrases (kind, level, text, source) values ('never', 1, $1, 'cursor')", [text]);
+  const a = new AiContent();
+  await quiet(() => a.attachDb(db));
+  let prompt = '';
+  a.fetcher = (async (_u: unknown, init?: RequestInit) => {
+    prompt = JSON.parse(String(init?.body)).contents[0].parts[0].text;
+    return reply([])();
+  }) as typeof fetch;
+  await a.refill('never', 1);
+  assert.match(prompt, /celular grabando/);
+  assert.match(prompt, /No las copies: otro conflicto/);
+  for (let i = 0; i < STOCK_LIMIT; i++) {
+    await pg.query("insert into ai_phrases (kind, level, text, source) values ('dare', 2, $1, 'cursor')", [`Imita el silencio número ${i} de una mesa que ya no sabe qué decir.`]);
+  }
+  const b = new AiContent();
+  await quiet(() => b.attachDb(db));
+  let calls = 0;
+  b.fetcher = (async () => { calls++; return reply([])(); }) as typeof fetch;
+  assert.equal(await b.refill('dare', 2), 0);
+  assert.equal(calls, 0, 'con el tope cubierto no llama a Gemini');
+});
+
+await test('lo flojo no se reparte, pero el siguiente lote lo usa para no repetirlo', async () => {
+  const { pg, db } = await freshDb();
+  await pg.query(
+    "insert into ai_phrases (kind, level, text, source, status) values ('never', 1, 'Yo nunca he abierto el refrigerador para coquetear con el repartidor.', 'gemini', 'pending')",
+  );
+  const a = new AiContent();
+  await quiet(() => a.attachDb(db));
+  assert.equal(a.size('never', 1), 0, 'no entra a la mesa');
+  let prompt = '';
+  a.fetcher = (async (_u: unknown, init?: RequestInit) => {
+    prompt = JSON.parse(String(init?.body)).contents[0].parts[0].text;
+    return reply([
+      'Yo nunca he abierto el refrigerador solo para pensar en alguien.',
+      'Yo nunca he llegado a una fiesta con la camisa al revés.',
+    ])();
+  }) as typeof fetch;
+  assert.equal(await a.refill('never', 1), 1);
+  assert.equal(a.size('never', 1), 1, 'la frase sana sí se reparte');
+  assert.match(prompt, /no se juegan/);
+  assert.match(prompt, /refrigerador/);
+  const rows = (await pg.query("select text, status from ai_phrases where kind = 'never' and level = 1 order by created_at")).rows as { text: string; status: string }[];
+  assert.equal(rows.find((r) => /pensar en alguien/.test(r.text))!.status, 'pending');
+  assert.equal(rows.find((r) => /camisa al revés/.test(r.text))!.status, 'approved');
 });
 
 await test('la IA aprende de lo que funcionó: las mejores y peores van como ejemplos en el siguiente lote', async () => {
